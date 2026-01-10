@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { Ticket } from "@/types/Ticket";
 import { formatAge } from "@/utils/formatAge";
 
@@ -26,11 +27,11 @@ const criticidadeColorMap = {
   Incidente: "bg-red-100 text-red-800",
 } as const;
 
-const statusColorMap = {
-  Pendente: "text-status-open",
-  "Em atendimento": "text-status-progress",
-  "Aguardando resposta": "text-status-progress",
-  Finalizado: "text-status-closed",
+const statusBadgeColorMap = {
+  Pendente: "bg-blue-100 text-blue-800",
+  "Em atendimento": "bg-amber-100 text-amber-800",
+  "Aguardando resposta": "bg-slate-100 text-slate-700",
+  Finalizado: "bg-green-100 text-green-800",
 } as const;
 
 const PRIORITIES = ["Baixa", "Média", "Alta", "Incidente"] as const;
@@ -43,31 +44,36 @@ const STATUSES = [
 
 export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
   ({ ticket, style, dragHandle, onUpdate }, ref) => {
+    const cellDivider = "border-r border-border last:border-r-0";
+
     return (
-      <TableRow ref={ref} style={style} className="hover:bg-slate-50">
+      <TableRow
+        ref={ref}
+        style={style}
+        className="hover:bg-slate-50"
+      >
         {/* Drag */}
-        <TableCell className="w-8">{dragHandle}</TableCell>
+        <TableCell className={`w-8 shrink-0 ${cellDivider}`}>
+          {dragHandle}
+        </TableCell>
 
         {/* Criticidade */}
-        <TableCell>
+        <TableCell className={`w-28 shrink-0 ${cellDivider}`}>
           <Select
             value={ticket.priority}
             onValueChange={(value) => {
               if (PRIORITIES.includes(value as Ticket["priority"])) {
-                onUpdate({
-                  ...ticket,
-                  priority: value as Ticket["priority"],
-                });
+                onUpdate({ ...ticket, priority: value as Ticket["priority"] });
               }
             }}
           >
             <SelectTrigger>
-              <Badge className={criticidadeColorMap[ticket.priority]}>
+              <Badge className={`${criticidadeColorMap[ticket.priority]} w-20`}>
                 <SelectValue />
               </Badge>
             </SelectTrigger>
             <SelectContent>
-              {["Baixa", "Média", "Alta", "Incidente"].map((p) => (
+              {PRIORITIES.map((p) => (
                 <SelectItem key={p} value={p}>
                   {p}
                 </SelectItem>
@@ -77,26 +83,22 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Ticket ID */}
-        <TableCell className="w-30 font-mono">
-          <input
-            type="text"
+        <TableCell className={`w-32 shrink-0 ${cellDivider}`}>
+          <Input
             value={ticket.ticketId}
             onChange={(e) =>
-              onUpdate({
-                ...ticket,
-                ticketId: e.target.value,
-              })
+              onUpdate({ ...ticket, ticketId: e.target.value })
             }
-            className="
-            w-full outline-none border-none bg-transparent rounded-md px-2 py-1 focus:bg-muted/40 transition-colors duration-150"
           />
         </TableCell>
 
-        {/* Idade (read-only formatada) */}
-        <TableCell>{formatAge(ticket.age)}</TableCell>
+        {/* Idade */}
+        <TableCell className={`w-24 shrink-0 ${cellDivider}`}>
+          {formatAge(ticket.age)}
+        </TableCell>
 
         {/* Título */}
-        <TableCell>
+        <TableCell className={`lg:table-cell w-64 shrink-0 ${cellDivider}`}>
           <Input
             value={ticket.title}
             onChange={(e) => onUpdate({ ...ticket, title: e.target.value })}
@@ -104,7 +106,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Proprietário */}
-        <TableCell className="hidden md:table-cell">
+        <TableCell className={`md:table-cell w-52 shrink-0 ${cellDivider}`}>
           <Input
             value={ticket.owner}
             onChange={(e) => onUpdate({ ...ticket, owner: e.target.value })}
@@ -112,47 +114,51 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Status */}
-        <TableCell className={statusColorMap[ticket.status]}>
+        <TableCell className={`w-36 shrink-0 ${cellDivider}`}>
           <Select
             value={ticket.status}
             onValueChange={(value) => {
               if (STATUSES.includes(value as Ticket["status"])) {
-                onUpdate({
-                  ...ticket,
-                  status: value as Ticket["status"],
-                });
+                onUpdate({ ...ticket, status: value as Ticket["status"] });
               }
             }}
           >
             <SelectTrigger>
-              <SelectValue />
+              <Badge
+                className={`${statusBadgeColorMap[ticket.status]} w-32 justify-center`}
+              >
+                <SelectValue />
+              </Badge>
             </SelectTrigger>
             <SelectContent>
-              {[
-                "Pendente",
-                "Em atendimento",
-                "Aguardando resposta",
-                "Finalizado",
-              ].map((s) => (
-                <SelectItem key={s} value={s}>
-                  {s}
+              {STATUSES.map((status) => (
+                <SelectItem key={status} value={status}>
+                  {status}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </TableCell>
 
-        {/* Nota */}
-        <TableCell className="hidden lg:table-cell">
-          <Input
+        {/* Nota — COLUNA PRIORITÁRIA */}
+        <TableCell className="xl:table-cell flex-1 min-w-[360px]">
+          <Textarea
             placeholder="Adicionar nota…"
             value={ticket.note ?? ""}
             onChange={(e) => onUpdate({ ...ticket, note: e.target.value })}
+            className="
+              w-full
+              resize-none
+              min-h-[44px]
+              leading-relaxed
+            "
+            rows={2}
           />
         </TableCell>
       </TableRow>
     );
   }
 );
+
 
 TicketRow.displayName = "TicketRow";

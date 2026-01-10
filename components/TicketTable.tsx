@@ -99,18 +99,19 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
 
     if (oldIndex === -1 || newIndex === -1) return;
 
-    const reorderedTickets = reorder(data, oldIndex, newIndex);
-    onChange?.(reorderedTickets);
+    onChange?.(reorder(data, oldIndex, newIndex));
   }
 
   function handleUpdateTicket(updated: Ticket) {
-    const updatedList = data.map((t) => (t.id === updated.id ? updated : t));
-    onChange?.(updatedList);
+    onChange?.(
+      data.map((t) => (t.id === updated.id ? updated : t))
+    );
   }
 
   return (
     <div className="rounded-lg border bg-background shadow-sm">
-      <div className="overflow-auto">
+      {/* Scroll container */}
+      <div className="overflow-x-auto overscroll-x-contain">
         <DndContext
           sensors={sensors}
           collisionDetection={closestCenter}
@@ -120,12 +121,20 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
             items={data.map((ticket) => ticket.id)}
             strategy={verticalListSortingStrategy}
           >
-            <Table>
+            <Table className="min-w-[1400px]">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
                     {headerGroup.headers.map((header) => (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        className="
+                          border-r border-border last:border-r-0
+                          whitespace-nowrap
+                          text-muted-foreground
+                          font-medium
+                        "
+                      >
                         {flexRender(
                           header.column.columnDef.header,
                           header.getContext()
@@ -153,3 +162,4 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
     </div>
   );
 }
+

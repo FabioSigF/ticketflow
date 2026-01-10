@@ -10,6 +10,7 @@ import { createEmptyTicket } from '@/utils/createEmptyTicket'
 const defaultTickets: Ticket[] = [
   {
     id: 1,
+    ticketId: "TCK-001",
     priority: "Alta",
     title: "Usuário não consegue logar",
     age: 90,
@@ -18,6 +19,7 @@ const defaultTickets: Ticket[] = [
   },
   {
     id: 2,
+    ticketId: "TCK-002",
     priority: "Incidente",
     title: "Servidor fora",
     age: 1440,
@@ -52,7 +54,7 @@ export default function HomePage() {
   }
 
   return (
-    <main className="container py-6 space-y-6">
+    <main className="py-6 px-6 space-y-6">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
 
       <TicketTable data={tickets} onChange={handleTicketsChange} />

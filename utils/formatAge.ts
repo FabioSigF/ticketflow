@@ -1,13 +1,20 @@
 export function formatAge(age: number): string {
   const minutes = age
+
   const days = Math.floor(minutes / 1440)
   const hours = Math.floor((minutes % 1440) / 60)
   const mins = minutes % 60
 
-  const parts = []
-  if (days > 0) parts.push(`${days} d`)
-  if (hours > 0) parts.push(`${hours} h`)
-  if (mins > 0 || parts.length === 0) parts.push(`${mins} m`)
+  // >= 1 dia → dias + horas
+  if (days > 0) {
+    return `${days} d ${hours} hrs`
+  }
 
-  return parts.join(' ')
+  // >= 1 hora → horas + minutos
+  if (hours > 0) {
+    return `${hours} h ${mins} min`
+  }
+
+  // < 1 hora → apenas minutos
+  return `${mins} min`
 }

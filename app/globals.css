@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 *,
 *::before,
@@ -93,13 +94,6 @@ td {
   outline-offset: 2px;
 }
 
-
-.container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem;
-}
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -113,3 +107,4 @@ td {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
