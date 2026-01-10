@@ -4,6 +4,8 @@ import { useState } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import { Ticket } from "@/types/Ticket";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
+import { Button } from '@/components/ui/button'
+import { createEmptyTicket } from '@/utils/createEmptyTicket'
 
 const defaultTickets: Ticket[] = [
   {
@@ -40,11 +42,21 @@ export default function HomePage() {
     localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
   }
 
+  function handleAddTicket() {
+    const nextId =
+      tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
+
+    const updated = [...tickets, createEmptyTicket(nextId)];
+    setTickets(updated);
+    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+  }
+
   return (
     <main className="container py-6 space-y-6">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
 
       <TicketTable data={tickets} onChange={handleTicketsChange} />
+      <Button onClick={handleAddTicket}>+ Novo ticket</Button>
     </main>
   );
 }

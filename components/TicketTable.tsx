@@ -1,11 +1,11 @@
-'use client'
+"use client";
 
 import {
   flexRender,
   getCoreRowModel,
   useReactTable,
   type Row,
-} from '@tanstack/react-table'
+} from "@tanstack/react-table";
 
 import {
   DndContext,
@@ -14,15 +14,15 @@ import {
   useSensor,
   useSensors,
   type DragEndEvent,
-} from '@dnd-kit/core'
+} from "@dnd-kit/core";
 
 import {
   SortableContext,
   useSortable,
   verticalListSortingStrategy,
-} from '@dnd-kit/sortable'
+} from "@dnd-kit/sortable";
 
-import { CSS } from '@dnd-kit/utilities'
+import { CSS } from "@dnd-kit/utilities";
 
 import {
   Table,
@@ -30,39 +30,39 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table'
+} from "@/components/ui/table";
 
-import { DragHandle } from './DragHandle'
+import { DragHandle } from "./DragHandle";
 
-import { Ticket } from '@/types/Ticket'
-import { TicketColumns } from './TicketColumns'
-import { reorder } from '@/utils/reorder'
-import { TicketRow } from './TicketRow'
+import { Ticket } from "@/types/Ticket";
+import { TicketColumns } from "./TicketColumns";
+import { reorder } from "@/utils/reorder";
+import { TicketRow } from "./TicketRow";
 
 type TicketTableProps = {
-  data: Ticket[]
-  onChange?: (tickets: Ticket[]) => void
-}
+  data: Ticket[];
+  onChange?: (tickets: Ticket[]) => void;
+};
 
 type DraggableRowProps = {
-  row: Row<Ticket>
-}
+  row: Row<Ticket>;
+  data: Ticket[];
+  onUpdateTicket?: (ticket: Ticket) => void;
+};
 
-
-function DraggableRow({ row }: DraggableRowProps) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-  } = useSortable({
-    id: row.original.id,
-  })
+function DraggableRow({ row, data, onUpdateTicket }: DraggableRowProps) {
+  const { attributes, listeners, setNodeRef, transform, transition } =
+    useSortable({
+      id: row.original.id,
+    });
 
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
+  };
+
+  function handleUpdate(updated: Ticket) {
+    onUpdateTicket?.(updated);
   }
 
   return (
@@ -70,46 +70,42 @@ function DraggableRow({ row }: DraggableRowProps) {
       ref={setNodeRef}
       ticket={row.original}
       style={style}
-      dragHandle={
-        <DragHandle
-          attributes={attributes}
-          listeners={listeners}
-        />
-      }
+      dragHandle={<DragHandle attributes={attributes} listeners={listeners} />}
+      onUpdate={handleUpdate}
     />
-  )
+  );
 }
-
 
 export function TicketTable({ data, onChange }: TicketTableProps) {
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
     })
-  )
+  );
 
   const table = useReactTable<Ticket>({
     data,
     columns: TicketColumns,
     getCoreRowModel: getCoreRowModel(),
-  })
+  });
 
   function handleDragEnd(event: DragEndEvent) {
-    const { active, over } = event
+    const { active, over } = event;
 
-    if (!over || active.id === over.id) return
+    if (!over || active.id === over.id) return;
 
-    const oldIndex = data.findIndex(
-      ticket => ticket.id === active.id
-    )
-    const newIndex = data.findIndex(
-      ticket => ticket.id === over.id
-    )
+    const oldIndex = data.findIndex((ticket) => ticket.id === active.id);
+    const newIndex = data.findIndex((ticket) => ticket.id === over.id);
 
-    if (oldIndex === -1 || newIndex === -1) return
+    if (oldIndex === -1 || newIndex === -1) return;
 
-    const reorderedTickets = reorder(data, oldIndex, newIndex)
-    onChange?.(reorderedTickets)
+    const reorderedTickets = reorder(data, oldIndex, newIndex);
+    onChange?.(reorderedTickets);
+  }
+
+  function handleUpdateTicket(updated: Ticket) {
+    const updatedList = data.map((t) => (t.id === updated.id ? updated : t));
+    onChange?.(updatedList);
   }
 
   return (
@@ -121,14 +117,14 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={data.map(ticket => ticket.id)}
+            items={data.map((ticket) => ticket.id)}
             strategy={verticalListSortingStrategy}
           >
             <Table>
               <TableHeader>
-                {table.getHeaderGroups().map(headerGroup => (
+                {table.getHeaderGroups().map((headerGroup) => (
                   <TableRow key={headerGroup.id}>
-                    {headerGroup.headers.map(header => (
+                    {headerGroup.headers.map((header) => (
                       <TableHead key={header.id}>
                         {flexRender(
                           header.column.columnDef.header,
@@ -141,8 +137,13 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
               </TableHeader>
 
               <TableBody>
-                {table.getRowModel().rows.map(row => (
-                  <DraggableRow key={row.id} row={row} />
+                {table.getRowModel().rows.map((row) => (
+                  <DraggableRow
+                    key={row.id}
+                    row={row}
+                    data={data}
+                    onUpdateTicket={handleUpdateTicket}
+                  />
                 ))}
               </TableBody>
             </Table>
@@ -150,5 +151,5 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
         </DndContext>
       </div>
     </div>
-  )
+  );
 }
