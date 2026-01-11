@@ -7,6 +7,17 @@ import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { Button } from "@/components/ui/button";
 import { createEmptyTicket } from "@/utils/createEmptyTicket";
 import { Input } from "@/components/ui/input";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+
+type TicketTab = "progress" | "done";
+
+const IN_PROGRESS_STATUSES = [
+  "Pendente",
+  "Em atendimento",
+  "Aguardando resposta",
+] as const;
+
+const DONE_STATUSES = ["Encerrado", "Movido", "Desbloqueado"] as const;
 
 export default function HomePage() {
   const [tickets, setTickets] = useState<Ticket[]>(() => {
@@ -18,23 +29,22 @@ export default function HomePage() {
     return stored ? (JSON.parse(stored) as Ticket[]) : [createEmptyTicket(1)];
   });
 
+  const [activeTab, setActiveTab] = useState<TicketTab>("progress");
+  const [search, setSearch] = useState("");
+
+  // Undo
   const [clearedTickets, setClearedTickets] = useState<Ticket[] | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
   const [undoSeconds, setUndoSeconds] = useState<number | null>(null);
-  const [search, setSearch] = useState("");
 
-  // 🔑 Refs separadas (SEM reaproveitar)
   const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const clearedAtRef = useRef<number | null>(null);
 
-  // Persistência
   function persist(updated: Ticket[]) {
     setTickets(updated);
     localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
   }
 
-  // 🔄 Limpa qualquer estado/timer de undo ativo
   function resetUndo() {
     if (undoIntervalRef.current) {
       clearInterval(undoIntervalRef.current);
@@ -49,40 +59,57 @@ export default function HomePage() {
     setUndoVisible(false);
     setUndoSeconds(null);
     setClearedTickets(null);
-    clearedAtRef.current = null;
   }
 
-  // ➕ Novo ticket
+  function isInProgressStatus(
+    status: Ticket["status"]
+  ): status is (typeof IN_PROGRESS_STATUSES)[number] {
+    return IN_PROGRESS_STATUSES.includes(
+      status as (typeof IN_PROGRESS_STATUSES)[number]
+    );
+  }
+
+  function isDoneStatus(
+    status: Ticket["status"]
+  ): status is (typeof DONE_STATUSES)[number] {
+    return DONE_STATUSES.includes(status as (typeof DONE_STATUSES)[number]);
+  }
+
   function handleAddTicket() {
     const nextId =
       tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
 
-    const newTicket = {
-      ...createEmptyTicket(nextId),
-      createdAt: Date.now(),
-    };
-
-    persist([...tickets, newTicket]);
+    persist([
+      ...tickets,
+      {
+        ...createEmptyTicket(nextId),
+        age: 0,
+      },
+    ]);
   }
 
-  // 🧹 Limpar tabela (com undo)
   function handleClearTable() {
-    resetUndo(); // 🔑 evita bugs ao clicar novamente
+    resetUndo();
 
-    setClearedTickets(tickets);
-    clearedAtRef.current = Date.now();
+    const inProgress = tickets.filter((t: Ticket) =>
+      isInProgressStatus(t.status)
+    );
 
-    const freshTicket = {
-      ...createEmptyTicket(1),
-      createdAt: Date.now(),
-    };
+    const remaining = tickets.filter((t: Ticket) => isDoneStatus(t.status));
 
-    persist([freshTicket]);
+    setClearedTickets(inProgress);
+
+    persist([
+      ...remaining,
+      {
+        ...createEmptyTicket(1),
+        age: 0,
+      },
+    ]);
 
     setUndoVisible(true);
     setUndoSeconds(30);
 
-    // ⏳ Contagem regressiva
     undoIntervalRef.current = setInterval(() => {
       setUndoSeconds((prev) => {
         if (!prev || prev <= 1) {
@@ -93,67 +120,105 @@ export default function HomePage() {
       });
     }, 1000);
 
-    // ⌛ Expiração final
-    undoTimeoutRef.current = setTimeout(() => {
-      resetUndo();
-    }, 30_000);
+    undoTimeoutRef.current = setTimeout(resetUndo, 30_000);
   }
 
-  // ↩️ Reverter limpeza
   function handleUndoClear() {
     if (!clearedTickets) return;
 
-    persist(clearedTickets);
-    resetUndo(); // 🔑 cancela tudo corretamente
+    persist([
+      ...tickets.filter((t) => isDoneStatus(t.status)),
+      ...clearedTickets,
+    ]);
+
+    resetUndo();
   }
 
-  // 🔍 Busca
-  const filteredTickets = tickets.filter((ticket) => {
-    const query = search.toLowerCase();
-
+  const searchedTickets = tickets.filter((ticket) => {
+    const q = search.toLowerCase();
     return (
-      ticket.title?.toLowerCase().includes(query) ||
-      ticket.owner?.toLowerCase().includes(query) ||
-      ticket.priority?.toLowerCase().includes(query) ||
-      ticket.ticketId?.toLowerCase().includes(query)
+      ticket.title?.toLowerCase().includes(q) ||
+      ticket.owner?.toLowerCase().includes(q) ||
+      ticket.priority?.toLowerCase().includes(q) ||
+      ticket.ticketId?.toLowerCase().includes(q)
     );
   });
 
+  const inProgressTickets = searchedTickets.filter((t) =>
+    isInProgressStatus(t.status)
+  );
+
+  const doneTickets = searchedTickets
+    .filter((t) => isDoneStatus(t.status))
+    .sort((a, b) => (b.age ?? 0) - (a.age ?? 0));
+
+  function handleTabChange(value: string) {
+    if (value === "progress" || value === "done") {
+      setActiveTab(value);
+    }
+  }
+
+  function mergeTickets(updatedSlice: Ticket[]) {
+    setTickets((prev) => {
+      const map = new Map(prev.map((t) => [t.id, t]));
+
+      updatedSlice.forEach((ticket) => {
+        map.set(ticket.id, ticket);
+      });
+
+      const merged = Array.from(map.values());
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(merged));
+
+      return merged;
+    });
+  }
   return (
     <main className="py-6 px-6 space-y-4">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
 
-      {/* Painel de comandos */}
-      <div className="flex items-center gap-4 justify-between">
-        <div className="w-full sm:max-w-sm">
-          <Input
-            placeholder="Buscar por ticket, título, proprietário ou criticidade…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
-        </div>
+      <div className="flex items-center justify-between gap-4">
+        <Input
+          className="max-w-sm"
+          placeholder="Buscar por ticket, título, proprietário ou criticidade…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
 
-        <div className="flex gap-2 justify-end">
-          {undoVisible && undoSeconds !== null ? (
-            <Button variant="secondary" onClick={handleUndoClear}>
-              Reverter limpeza ({undoSeconds}s)
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={handleClearTable}>
-              Limpar tabela
-            </Button>
-          )}
+        {activeTab === "progress" && (
+          <div className="flex gap-2">
+            {undoVisible && undoSeconds !== null ? (
+              <Button variant="secondary" onClick={handleUndoClear}>
+                Reverter limpeza ({undoSeconds}s)
+              </Button>
+            ) : (
+              <Button variant="outline" onClick={handleClearTable}>
+                Limpar tabela
+              </Button>
+            )}
 
-          <Button onClick={handleAddTicket}>+ Novo ticket</Button>
-        </div>
+            <Button onClick={handleAddTicket}>+ Novo ticket</Button>
+          </div>
+        )}
       </div>
 
-      {/* Tabela */}
-      <TicketTable
-        data={filteredTickets}
-        onChange={persist}
-        disableDrag={search.trim().length > 0}
-      />
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <TabsList>
+          <TabsTrigger value="progress">Em andamento</TabsTrigger>
+          <TabsTrigger value="done">Finalizados</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="progress">
+          <TicketTable
+            data={inProgressTickets}
+            onChange={mergeTickets}
+            disableDrag={search.trim().length > 0}
+          />
+        </TabsContent>
+
+        <TabsContent value="done">
+          <TicketTable data={doneTickets} onChange={mergeTickets} disableDrag />
+        </TabsContent>
+      </Tabs>
     </main>
   );
 }

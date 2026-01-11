@@ -5,6 +5,6 @@ export type Ticket = {
   title: string
   age: number
   owner: string
-  status: 'Pendente' | 'Em atendimento' | 'Aguardando resposta' | 'Finalizado'
+  status: 'Pendente' | 'Em atendimento' | 'Aguardando resposta' | 'Encerrado' | 'Movido' | 'Desbloqueado'
   note?: string
 }
