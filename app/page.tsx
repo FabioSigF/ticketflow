@@ -6,6 +6,7 @@ import { Ticket } from "@/types/Ticket";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
 import { Button } from "@/components/ui/button";
 import { createEmptyTicket } from "@/utils/createEmptyTicket";
+import { Input } from "@/components/ui/input";
 
 export default function HomePage() {
   const [tickets, setTickets] = useState<Ticket[]>(() => {
@@ -20,6 +21,7 @@ export default function HomePage() {
   const [clearedTickets, setClearedTickets] = useState<Ticket[] | null>(null);
   const [undoVisible, setUndoVisible] = useState(false);
   const [undoSeconds, setUndoSeconds] = useState<number | null>(null);
+  const [search, setSearch] = useState("");
 
   const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clearedAtRef = useRef<number | null>(null);
@@ -62,7 +64,7 @@ export default function HomePage() {
     setUndoVisible(true);
     setUndoSeconds(30);
 
-    // ⏱️ Contagem regressiva
+    // Contagem regressiva
     const interval = setInterval(() => {
       setUndoSeconds((prev) => {
         if (!prev || prev <= 1) {
@@ -86,8 +88,7 @@ export default function HomePage() {
     if (!clearedTickets || !clearedAtRef.current) return;
 
     const addedAfterClear = tickets.filter(
-      (t) =>
-        (t as Ticket).age && (t as Ticket).age > clearedAtRef.current!
+      (t) => (t as Ticket).age && (t as Ticket).age > clearedAtRef.current!
     );
 
     const restored = [...clearedTickets, ...addedAfterClear];
@@ -104,31 +105,51 @@ export default function HomePage() {
     }
   }
 
+  const filteredTickets = tickets.filter((ticket) => {
+    const query = search.toLowerCase();
+
+    return (
+      ticket.title?.toLowerCase().includes(query) ||
+      ticket.owner?.toLowerCase().includes(query) ||
+      ticket.priority?.toLowerCase().includes(query) ||
+      ticket.ticketId?.toLowerCase().includes(query)
+    );
+  });
+
   return (
     <main className="py-6 px-6 space-y-4">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
 
       {/* Painel de comandos */}
-      <div className="flex items-center justify-between">
-        <div>
-          {undoVisible && undoSeconds !== null && (
-            <Button variant="secondary" onClick={handleUndoClear}>
-              Reverter limpeza ({undoSeconds}s)
-            </Button>
-          )}
+      <div className="flex items-center gap-4 justify-between">
+        <div className="w-full sm:max-w-sm">
+          <Input
+            placeholder="Buscar por ticket, título, proprietário ou criticidade…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
+        <div className="flex gap-2 justify-end">
+          <div className="flex items-center gap-2">
+            <div>
+              {undoVisible && undoSeconds !== null ? (
+                <Button variant="secondary" onClick={handleUndoClear}>
+                  Reverter limpeza ({undoSeconds}s)
+                </Button>
+              ) : (
+                <Button variant="outline" onClick={handleClearTable}>
+                  Limpar tabela
+                </Button>
+              )}
+            </div>
 
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={handleClearTable}>
-            Limpar tabela
-          </Button>
-
-          <Button onClick={handleAddTicket}>+ Novo ticket</Button>
+            <Button onClick={handleAddTicket}>+ Novo ticket</Button>
+          </div>
         </div>
       </div>
 
       {/* Tabela */}
-      <TicketTable data={tickets} onChange={persist} />
+      <TicketTable data={filteredTickets} onChange={persist} disableDrag={search.trim().length > 0} />
     </main>
   );
 }
