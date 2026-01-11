@@ -52,33 +52,8 @@ type DraggableRowProps = {
   row: Row<Ticket>;
   data: Ticket[];
   onUpdateTicket?: (ticket: Ticket) => void;
+  disableDrag?: boolean;
 };
-
-function DraggableRow({ row, data, onUpdateTicket }: DraggableRowProps) {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({
-      id: row.original.id,
-    });
-
-  const style: React.CSSProperties = {
-    transform: CSS.Transform.toString(transform),
-    transition,
-  };
-
-  function handleUpdate(updated: Ticket) {
-    onUpdateTicket?.(updated);
-  }
-
-  return (
-    <TicketRow
-      ref={setNodeRef}
-      ticket={row.original}
-      style={style}
-      dragHandle={<DragHandle attributes={attributes} listeners={listeners} />}
-      onUpdate={handleUpdate}
-    />
-  );
-}
 
 export function TicketTable({
   data,
@@ -87,6 +62,42 @@ export function TicketTable({
 }: TicketTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
   const isSortingActive = sorting.length > 0;
+
+  function DraggableRow({
+    row,
+    data,
+    onUpdateTicket,
+    disableDrag,
+  }: DraggableRowProps) {
+    const { attributes, listeners, setNodeRef, transform, transition } =
+      useSortable({
+        id: row.original.id,
+        disabled: disableDrag,
+      });
+
+    const style: React.CSSProperties = {
+      transform: CSS.Transform.toString(transform),
+      transition,
+    };
+
+    function handleUpdate(updated: Ticket) {
+      onUpdateTicket?.(updated);
+    }
+
+    return (
+      <TicketRow
+        ref={disableDrag ? undefined : setNodeRef}
+        ticket={row.original}
+        style={style}
+        disableDrag={disableDrag}
+        dragHandle={
+          disableDrag ? null :
+          <DragHandle attributes={attributes} listeners={listeners} />
+        }
+        onUpdate={handleUpdate}
+      />
+    );
+  }
 
   const sensors = useSensors(
     useSensor(PointerSensor, {

@@ -23,7 +23,9 @@ export default function HomePage() {
   const [undoSeconds, setUndoSeconds] = useState<number | null>(null);
   const [search, setSearch] = useState("");
 
-  const clearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  // 🔑 Refs separadas (SEM reaproveitar)
+  const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const clearedAtRef = useRef<number | null>(null);
 
   // Persistência
@@ -32,7 +34,25 @@ export default function HomePage() {
     localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
   }
 
-  // Novo ticket
+  // 🔄 Limpa qualquer estado/timer de undo ativo
+  function resetUndo() {
+    if (undoIntervalRef.current) {
+      clearInterval(undoIntervalRef.current);
+      undoIntervalRef.current = null;
+    }
+
+    if (undoTimeoutRef.current) {
+      clearTimeout(undoTimeoutRef.current);
+      undoTimeoutRef.current = null;
+    }
+
+    setUndoVisible(false);
+    setUndoSeconds(null);
+    setClearedTickets(null);
+    clearedAtRef.current = null;
+  }
+
+  // ➕ Novo ticket
   function handleAddTicket() {
     const nextId =
       tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
@@ -45,11 +65,9 @@ export default function HomePage() {
     persist([...tickets, newTicket]);
   }
 
-  // Limpar tabela
+  // 🧹 Limpar tabela (com undo)
   function handleClearTable() {
-    if (clearTimeoutRef.current) {
-      clearTimeout(clearTimeoutRef.current);
-    }
+    resetUndo(); // 🔑 evita bugs ao clicar novamente
 
     setClearedTickets(tickets);
     clearedAtRef.current = Date.now();
@@ -64,47 +82,32 @@ export default function HomePage() {
     setUndoVisible(true);
     setUndoSeconds(30);
 
-    // Contagem regressiva
-    const interval = setInterval(() => {
+    // ⏳ Contagem regressiva
+    undoIntervalRef.current = setInterval(() => {
       setUndoSeconds((prev) => {
         if (!prev || prev <= 1) {
-          clearInterval(interval);
-          setUndoVisible(false);
-          setClearedTickets(null);
-          clearedAtRef.current = null;
+          resetUndo();
           return null;
         }
         return prev - 1;
       });
     }, 1000);
 
-    clearTimeoutRef.current = setTimeout(() => {
-      clearInterval(interval);
+    // ⌛ Expiração final
+    undoTimeoutRef.current = setTimeout(() => {
+      resetUndo();
     }, 30_000);
   }
 
-  // Reverter limpeza
+  // ↩️ Reverter limpeza
   function handleUndoClear() {
-    if (!clearedTickets || !clearedAtRef.current) return;
+    if (!clearedTickets) return;
 
-    const addedAfterClear = tickets.filter(
-      (t) => (t as Ticket).age && (t as Ticket).age > clearedAtRef.current!
-    );
-
-    const restored = [...clearedTickets, ...addedAfterClear];
-
-    persist(restored);
-
-    setClearedTickets(null);
-    setUndoVisible(false);
-    setUndoSeconds(null);
-    clearedAtRef.current = null;
-
-    if (clearTimeoutRef.current) {
-      clearTimeout(clearTimeoutRef.current);
-    }
+    persist(clearedTickets);
+    resetUndo(); // 🔑 cancela tudo corretamente
   }
 
+  // 🔍 Busca
   const filteredTickets = tickets.filter((ticket) => {
     const query = search.toLowerCase();
 
@@ -129,27 +132,28 @@ export default function HomePage() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <div className="flex gap-2 justify-end">
-          <div className="flex items-center gap-2">
-            <div>
-              {undoVisible && undoSeconds !== null ? (
-                <Button variant="secondary" onClick={handleUndoClear}>
-                  Reverter limpeza ({undoSeconds}s)
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={handleClearTable}>
-                  Limpar tabela
-                </Button>
-              )}
-            </div>
 
-            <Button onClick={handleAddTicket}>+ Novo ticket</Button>
-          </div>
+        <div className="flex gap-2 justify-end">
+          {undoVisible && undoSeconds !== null ? (
+            <Button variant="secondary" onClick={handleUndoClear}>
+              Reverter limpeza ({undoSeconds}s)
+            </Button>
+          ) : (
+            <Button variant="outline" onClick={handleClearTable}>
+              Limpar tabela
+            </Button>
+          )}
+
+          <Button onClick={handleAddTicket}>+ Novo ticket</Button>
         </div>
       </div>
 
       {/* Tabela */}
-      <TicketTable data={filteredTickets} onChange={persist} disableDrag={search.trim().length > 0} />
+      <TicketTable
+        data={filteredTickets}
+        onChange={persist}
+        disableDrag={search.trim().length > 0}
+      />
     </main>
   );
 }

@@ -18,6 +18,7 @@ type TicketRowProps = {
   style?: React.CSSProperties;
   dragHandle?: React.ReactNode;
   onUpdate: (updated: Ticket) => void;
+  disableDrag?: boolean;
 };
 
 const criticidadeColorMap = {
@@ -43,20 +44,17 @@ const STATUSES = [
 ] as const;
 
 export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
-  ({ ticket, style, dragHandle, onUpdate }, ref) => {
+  ({ ticket, style, dragHandle, onUpdate, disableDrag }, ref) => {
     const cellDivider = "border-r border-border last:border-r-0";
 
     return (
-      <TableRow
-        ref={ref}
-        style={style}
-        className="hover:bg-slate-50"
-      >
-        {/* Drag */}
-        <TableCell className={`w-8 shrink-0 ${cellDivider}`}>
-          {dragHandle}
-        </TableCell>
+      <TableRow ref={ref} style={style} className="hover:bg-slate-50">
 
+        {disableDrag ? null : (
+          <TableCell className={`w-8 shrink-0 ${cellDivider}`}>
+            {dragHandle}
+          </TableCell>
+        )}
         {/* Criticidade */}
         <TableCell className={`w-28 shrink-0 ${cellDivider}`}>
           <Select
@@ -86,9 +84,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         <TableCell className={`w-32 shrink-0 ${cellDivider}`}>
           <Input
             value={ticket.ticketId}
-            onChange={(e) =>
-              onUpdate({ ...ticket, ticketId: e.target.value })
-            }
+            onChange={(e) => onUpdate({ ...ticket, ticketId: e.target.value })}
           />
         </TableCell>
 
@@ -125,7 +121,9 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
           >
             <SelectTrigger>
               <Badge
-                className={`${statusBadgeColorMap[ticket.status]} w-32 justify-center`}
+                className={`${
+                  statusBadgeColorMap[ticket.status]
+                } w-32 justify-center`}
               >
                 <SelectValue />
               </Badge>
@@ -159,6 +157,5 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
     );
   }
 );
-
 
 TicketRow.displayName = "TicketRow";
