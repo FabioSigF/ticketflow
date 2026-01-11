@@ -4,6 +4,8 @@ import {
   flexRender,
   getCoreRowModel,
   useReactTable,
+  getSortedRowModel,
+  type SortingState,
   type Row,
 } from "@tanstack/react-table";
 
@@ -38,6 +40,7 @@ import { Ticket } from "@/types/Ticket";
 import { TicketColumns } from "./TicketColumns";
 import { reorder } from "@/utils/reorder";
 import { TicketRow } from "./TicketRow";
+import { useState } from "react";
 
 type TicketTableProps = {
   data: Ticket[];
@@ -77,6 +80,9 @@ function DraggableRow({ row, data, onUpdateTicket }: DraggableRowProps) {
 }
 
 export function TicketTable({ data, onChange }: TicketTableProps) {
+  const [sorting, setSorting] = useState<SortingState>([]);
+  const isSortingActive = sorting.length > 0;
+
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
@@ -86,7 +92,12 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
   const table = useReactTable<Ticket>({
     data,
     columns: TicketColumns,
+    state: {
+      sorting,
+    },
+    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
+    getSortedRowModel: getSortedRowModel(),
   });
 
   function handleDragEnd(event: DragEndEvent) {
@@ -103,9 +114,7 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
   }
 
   function handleUpdateTicket(updated: Ticket) {
-    onChange?.(
-      data.map((t) => (t.id === updated.id ? updated : t))
-    );
+    onChange?.(data.map((t) => (t.id === updated.id ? updated : t)));
   }
 
   return (
@@ -117,10 +126,48 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
           collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
-          <SortableContext
-            items={data.map((ticket) => ticket.id)}
-            strategy={verticalListSortingStrategy}
-          >
+          {!isSortingActive ? (
+            <SortableContext
+              items={data.map((ticket) => ticket.id)}
+              strategy={verticalListSortingStrategy}
+            >
+              <Table className="min-w-[1400px]">
+                <TableHeader>
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow key={headerGroup.id}>
+                      {headerGroup.headers.map((header) => (
+                        <TableHead
+                          key={header.id}
+                          className="
+                          border-r border-border last:border-r-0
+                          whitespace-nowrap
+                          text-muted-foreground
+                          font-medium
+                        "
+                        >
+                          {flexRender(
+                            header.column.columnDef.header,
+                            header.getContext()
+                          )}
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+
+                <TableBody>
+                  {table.getRowModel().rows.map((row) => (
+                    <DraggableRow
+                      key={row.id}
+                      row={row}
+                      data={data}
+                      onUpdateTicket={handleUpdateTicket}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </SortableContext>
+          ) : (
             <Table className="min-w-[1400px]">
               <TableHeader>
                 {table.getHeaderGroups().map((headerGroup) => (
@@ -156,10 +203,9 @@ export function TicketTable({ data, onChange }: TicketTableProps) {
                 ))}
               </TableBody>
             </Table>
-          </SortableContext>
+          )}
         </DndContext>
       </div>
     </div>
   );
 }
-
