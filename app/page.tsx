@@ -91,16 +91,11 @@ export default function HomePage() {
   function handleClearTable() {
     resetUndo();
 
-    const inProgress = tickets.filter((t: Ticket) =>
-      isInProgressStatus(t.status)
-    );
+    // Guarda TODOS os tickets atuais
+    setClearedTickets(tickets);
 
-    const remaining = tickets.filter((t: Ticket) => isDoneStatus(t.status));
-
-    setClearedTickets(inProgress);
-
+    // Limpa tudo e deixa apenas uma linha vazia
     persist([
-      ...remaining,
       {
         ...createEmptyTicket(1),
         age: 0,
@@ -126,10 +121,16 @@ export default function HomePage() {
   function handleUndoClear() {
     if (!clearedTickets) return;
 
-    persist([
-      ...tickets.filter((t) => isDoneStatus(t.status)),
-      ...clearedTickets,
-    ]);
+    setTickets((current) => {
+      const restoredIds = new Set(clearedTickets.map((t) => t.id));
+
+      // Mantém tickets criados depois da limpeza
+      const newTickets = current.filter((t) => !restoredIds.has(t.id));
+
+      const merged = [...clearedTickets, ...newTickets];
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(merged));
+      return merged;
+    });
 
     resetUndo();
   }
@@ -189,13 +190,12 @@ export default function HomePage() {
   }
 
   function handleDeleteTicket(id: number) {
-  setTickets((prev) => {
-    const updated = prev.filter((t) => t.id !== id);
-    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
-    return updated;
-  });
-}
-
+    setTickets((prev) => {
+      const updated = prev.filter((t) => t.id !== id);
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+      return updated;
+    });
+  }
 
   return (
     <main className="py-6 px-6 space-y-4">
@@ -228,8 +228,12 @@ export default function HomePage() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="progress">Em andamento ({inProgressTickets.length})</TabsTrigger>
-          <TabsTrigger value="done">Finalizados ({doneTickets.length})</TabsTrigger>
+          <TabsTrigger value="progress">
+            Em andamento ({inProgressTickets.length})
+          </TabsTrigger>
+          <TabsTrigger value="done">
+            Finalizados ({doneTickets.length})
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="progress">
@@ -243,7 +247,12 @@ export default function HomePage() {
         </TabsContent>
 
         <TabsContent value="done">
-          <TicketTable data={doneTickets} onChange={mergeTickets} disableDrag onDeleteTicket={handleDeleteTicket} />
+          <TicketTable
+            data={doneTickets}
+            onChange={mergeTickets}
+            disableDrag
+            onDeleteTicket={handleDeleteTicket}
+          />
         </TabsContent>
       </Tabs>
     </main>

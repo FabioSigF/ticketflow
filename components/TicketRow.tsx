@@ -34,10 +34,10 @@ const criticidadeColorMap = {
 const statusBadgeColorMap = {
   Pendente: "bg-blue-100 text-blue-800",
   "Em atendimento": "bg-amber-100 text-amber-800",
-  "Aguardando resposta": "bg-slate-100 text-slate-700",
+  "Aguardando resposta": "bg-teal-100 text-teal-800",
   Encerrado: "bg-green-100 text-green-800",
   Movido: "bg-purple-100 text-purple-800",
-  Desbloqueado: "bg-teal-100 text-teal-800",
+  Desbloqueado: "bg-slate-100 text-slate-700",
 } as const;
 
 const PRIORITIES = ["Baixa", "Média", "Alta", "Incidente"] as const;
