@@ -188,6 +188,15 @@ export default function HomePage() {
     });
   }
 
+  function handleDeleteTicket(id: number) {
+  setTickets((prev) => {
+    const updated = prev.filter((t) => t.id !== id);
+    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+    return updated;
+  });
+}
+
+
   return (
     <main className="py-6 px-6 space-y-4">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
@@ -219,8 +228,8 @@ export default function HomePage() {
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="progress">Em andamento</TabsTrigger>
-          <TabsTrigger value="done">Finalizados</TabsTrigger>
+          <TabsTrigger value="progress">Em andamento ({inProgressTickets.length})</TabsTrigger>
+          <TabsTrigger value="done">Finalizados ({doneTickets.length})</TabsTrigger>
         </TabsList>
 
         <TabsContent value="progress">
@@ -229,11 +238,12 @@ export default function HomePage() {
             onChange={mergeTickets}
             disableDrag={search.trim().length > 0}
             onReorder={handleReorderInProgress}
+            onDeleteTicket={handleDeleteTicket}
           />
         </TabsContent>
 
         <TabsContent value="done">
-          <TicketTable data={doneTickets} onChange={mergeTickets} disableDrag />
+          <TicketTable data={doneTickets} onChange={mergeTickets} disableDrag onDeleteTicket={handleDeleteTicket} />
         </TabsContent>
       </Tabs>
     </main>

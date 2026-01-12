@@ -47,12 +47,14 @@ type TicketTableProps = {
   onReorder?: (orderedIds: number[]) => void;
   onChange?: (tickets: Ticket[]) => void;
   disableDrag?: boolean;
+  onDeleteTicket?: (id: number) => void;
 };
 
 type DraggableRowProps = {
   row: Row<Ticket>;
   data: Ticket[];
   onUpdateTicket?: (ticket: Ticket) => void;
+  onDeleteTicket?: (id: number) => void;
   disableDrag?: boolean;
 };
 
@@ -60,6 +62,7 @@ function DraggableRow({
   row,
   data,
   onUpdateTicket,
+  onDeleteTicket,
   disableDrag,
 }: DraggableRowProps) {
   const { attributes, listeners, setNodeRef, transform, transition } =
@@ -89,6 +92,7 @@ function DraggableRow({
         )
       }
       onUpdate={handleUpdate}
+      onDelete={onDeleteTicket}
     />
   );
 }
@@ -98,6 +102,7 @@ export function TicketTable({
   onChange,
   disableDrag = false,
   onReorder,
+  onDeleteTicket,
 }: TicketTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -184,6 +189,7 @@ export function TicketTable({
                     data={data}
                     onUpdateTicket={handleUpdateTicket}
                     disableDrag={disableDrag}
+                    onDeleteTicket={onDeleteTicket}
                   />
                 ))}
               </TableBody>

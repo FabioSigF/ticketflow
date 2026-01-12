@@ -12,12 +12,15 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Ticket } from "@/types/Ticket";
 import { formatAge } from "@/utils/formatAge";
+import { Button } from "./ui/button";
+import { Trash2 } from "lucide-react";
 
 type TicketRowProps = {
   ticket: Ticket;
   style?: React.CSSProperties;
   dragHandle?: React.ReactNode;
   onUpdate: (updated: Ticket) => void;
+  onDelete?: (id: number) => void;
   disableDrag?: boolean;
 };
 
@@ -48,14 +51,12 @@ const STATUSES = [
 ] as const;
 
 export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
-  ({ ticket, style, dragHandle, onUpdate, disableDrag }, ref) => {
+  ({ ticket, style, dragHandle, onUpdate, disableDrag, onDelete }, ref) => {
     const cellDivider = "border-r border-border last:border-r-0";
 
     return (
       <TableRow ref={ref} style={style} className="hover:bg-slate-50">
-
-        {disableDrag ? 
-        (
+        {disableDrag ? (
           <TableCell className={`w-8 shrink-0 ${cellDivider}`} />
         ) : (
           <TableCell className={`w-8 shrink-0 ${cellDivider}`}>
@@ -146,7 +147,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Nota — COLUNA PRIORITÁRIA */}
-        <TableCell className="xl:table-cell flex-1 min-w-[300px]">
+        <TableCell className={`xl:table-cell flex-1 min-w-[300px] ${cellDivider}`}>
           <Textarea
             placeholder="Adicionar nota…"
             value={ticket.note ?? ""}
@@ -159,6 +160,16 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
             "
             rows={2}
           />
+        </TableCell>
+
+        <TableCell className={`text-center w-14 shrink-0`}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onDelete?.(ticket.id)}
+          >
+            <Trash2 className="h-4 w-4 text-destructive" />
+          </Button>
         </TableCell>
       </TableRow>
     );

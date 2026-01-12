@@ -47,4 +47,9 @@ export const TicketColumns: ColumnDef<Ticket>[] = [
     header: "Nota",
     enableSorting: false,
   },
+  {
+    accessorKey: "actions",
+    header: "Ações",
+    enableSorting: false,
+  },
 ];
