@@ -101,7 +101,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Título */}
-        <TableCell className={`lg:table-cell w-64 shrink-0 ${cellDivider}`}>
+        <TableCell className={`lg:table-cell w-72 shrink-0 ${cellDivider}`}>
           <Input
             value={ticket.title}
             onChange={(e) => onUpdate({ ...ticket, title: e.target.value })}
@@ -146,7 +146,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Nota — COLUNA PRIORITÁRIA */}
-        <TableCell className="xl:table-cell flex-1 min-w-[360px]">
+        <TableCell className="xl:table-cell flex-1 min-w-[300px]">
           <Textarea
             placeholder="Adicionar nota…"
             value={ticket.note ?? ""}

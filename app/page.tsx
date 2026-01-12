@@ -172,6 +172,22 @@ export default function HomePage() {
       return merged;
     });
   }
+
+  function handleReorderInProgress(orderedIds: number[]) {
+    setTickets((prev) => {
+      const inProgress = prev.filter((t) => isInProgressStatus(t.status));
+      const others = prev.filter((t) => !isInProgressStatus(t.status));
+
+      const ordered = orderedIds
+        .map((id) => inProgress.find((t) => t.id === id))
+        .filter(Boolean) as Ticket[];
+
+      const updated = [...ordered, ...others];
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+      return updated;
+    });
+  }
+
   return (
     <main className="py-6 px-6 space-y-4">
       <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
@@ -212,6 +228,7 @@ export default function HomePage() {
             data={inProgressTickets}
             onChange={mergeTickets}
             disableDrag={search.trim().length > 0}
+            onReorder={handleReorderInProgress}
           />
         </TabsContent>
 

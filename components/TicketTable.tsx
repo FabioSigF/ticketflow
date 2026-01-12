@@ -44,6 +44,7 @@ import { useCallback, useState } from "react";
 
 type TicketTableProps = {
   data: Ticket[];
+  onReorder?: (orderedIds: number[]) => void;
   onChange?: (tickets: Ticket[]) => void;
   disableDrag?: boolean;
 };
@@ -96,6 +97,7 @@ export function TicketTable({
   data,
   onChange,
   disableDrag = false,
+  onReorder,
 }: TicketTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
@@ -119,15 +121,15 @@ export function TicketTable({
 
   function handleDragEnd(event: DragEndEvent) {
     const { active, over } = event;
-
     if (!over || active.id === over.id) return;
 
-    const oldIndex = data.findIndex((ticket) => ticket.id === active.id);
-    const newIndex = data.findIndex((ticket) => ticket.id === over.id);
+    const orderedIds = reorder(
+      data.map((t) => t.id),
+      data.findIndex((t) => t.id === active.id),
+      data.findIndex((t) => t.id === over.id)
+    );
 
-    if (oldIndex === -1 || newIndex === -1) return;
-
-    onChange?.(reorder(data, oldIndex, newIndex));
+    onReorder?.(orderedIds);
   }
 
   const handleUpdateTicket = useCallback(
