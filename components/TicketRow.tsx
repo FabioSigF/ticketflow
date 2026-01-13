@@ -154,7 +154,6 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
             onChange={(e) => onUpdate({ ...ticket, note: e.target.value })}
             className="
               w-full
-              resize-none
               min-h-[44px]
               leading-relaxed
             "
