@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import { Ticket } from "@/types/Ticket";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
@@ -8,6 +8,8 @@ import { Button } from "@/components/ui/button";
 import { createEmptyTicket } from "@/utils/createEmptyTicket";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { OTRSTicket } from "@/types/OTRSTicket";
+import { parseOTRSPriorityToTicket } from "@/utils/parseOTRSPriorityToTicket";
 
 type TicketTab = "progress" | "done";
 
@@ -39,6 +41,58 @@ export default function HomePage() {
 
   const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type === "OTRS_TICKETS_SYNC") {
+        const otrsTickets = event.data.payload;
+
+        setTickets((prev) => {
+          const mapped = mapOtrsToTickets(otrsTickets, prev);
+
+          // evita duplicar pelo ticketId
+          const existingTicketIds = new Set(prev.map((t) => t.ticketId));
+
+          const filtered = mapped.filter(
+            (t) => !existingTicketIds.has(t.ticketId)
+          );
+
+          const merged = [...filtered, ...prev];
+
+          localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(merged));
+
+          return merged;
+        });
+
+        console.log("OTRS tickets persisted in progress queue");
+      }
+    }
+
+    window.addEventListener("message", handleMessage);
+    return () => window.removeEventListener("message", handleMessage);
+  }, []);
+
+  function mapOtrsToTickets(
+    otrsTickets: OTRSTicket[],
+    currentTickets: Ticket[]
+  ): Ticket[] {
+    const lastId =
+      currentTickets.length > 0
+        ? Math.max(...currentTickets.map((t) => t.id))
+        : 0;
+
+    let nextId = lastId + 1;
+
+    return otrsTickets.map((otrs) => ({
+      id: nextId++,
+      ticketId: otrs.ticketId,
+      title: otrs.title,
+      owner: otrs.owner,
+      priority: parseOTRSPriorityToTicket(otrs.priority),
+      age: otrs.age,
+      status: "Em atendimento",
+    }));
+  }
 
   function persist(updated: Ticket[]) {
     setTickets(updated);
@@ -83,7 +137,7 @@ export default function HomePage() {
       ...tickets,
       {
         ...createEmptyTicket(nextId),
-        age: 0,
+        age: "0 min",
       },
     ]);
   }
@@ -98,7 +152,7 @@ export default function HomePage() {
     persist([
       {
         ...createEmptyTicket(1),
-        age: 0,
+        age: "0 min",
       },
     ]);
 
@@ -151,7 +205,7 @@ export default function HomePage() {
 
   const doneTickets = searchedTickets
     .filter((t) => isDoneStatus(t.status))
-    .sort((a, b) => (b.age ?? 0) - (a.age ?? 0));
+    .sort((a, b) => b.id - a.id);
 
   function handleTabChange(value: string) {
     if (value === "progress" || value === "done") {

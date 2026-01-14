@@ -11,7 +11,6 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Ticket } from "@/types/Ticket";
-import { formatAge } from "@/utils/formatAge";
 import { Button } from "./ui/button";
 import { Trash2 } from "lucide-react";
 
@@ -98,7 +97,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
 
         {/* Idade */}
         <TableCell className={`w-24 shrink-0 ${cellDivider}`}>
-          {formatAge(ticket.age)}
+          {ticket.age}
         </TableCell>
 
         {/* Título */}

@@ -12,5 +12,5 @@ export function sortByPriority(a: Ticket, b: Ticket) {
 }
 
 export function sortByAge(a: Ticket, b: Ticket) {
-  return b.age - a.age;
+  return parseInt(a.age) - parseInt(b.age);
 }
