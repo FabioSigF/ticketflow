@@ -30,7 +30,7 @@ module.exports = {
 
         border: "#e2e8f0",
         input: "#e2e8f0",
-        ring: "#3b82f6",
+        ring: "#e2e8f0",
 
         muted: {
           DEFAULT: "#f1f5f9",
