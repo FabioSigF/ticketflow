@@ -30,7 +30,7 @@ module.exports = {
 
         border: "#e2e8f0",
         input: "#e2e8f0",
-        ring: "#3b82f6",
+        ring: "#e2e8f0",
 
         muted: {
           DEFAULT: "#f1f5f9",
@@ -44,7 +44,7 @@ module.exports = {
 
         /* === Brand / primary === */
         primary: {
-          DEFAULT: "#2563eb",
+          DEFAULT: "#FF8A25",
           foreground: "#ffffff",
         },
 
@@ -61,7 +61,7 @@ module.exports = {
         /* === Ticket status === */
         status: {
           pendente: "#d97706",
-          atendimento: "#2563eb",
+          atendimento: "#FF8A25",
           aguardando: "#7c3aed",
           finalizado: "#16a34a",
         },
