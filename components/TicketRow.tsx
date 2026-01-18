@@ -1,4 +1,4 @@
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useRef, useState } from "react";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Ticket } from "@/types/Ticket";
 import { Button } from "./ui/button";
 import { Trash2 } from "lucide-react";
+import { useDebouncedEffect } from "@/hooks/useDebouncedEffect";
 
 type TicketRowProps = {
   ticket: Ticket;
@@ -53,6 +54,26 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
   ({ ticket, style, dragHandle, onUpdate, disableDrag, onDelete }, ref) => {
     const cellDivider = "border-r border-border last:border-r-0";
 
+    const [localTicket, setLocalTicket] = useState(ticket);
+
+    useEffect(() => {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setLocalTicket(ticket);
+    }, [ticket.id]);
+
+    const lastSent = useRef<Ticket>(localTicket);
+
+    useDebouncedEffect(
+      () => {
+        if (JSON.stringify(lastSent.current) !== JSON.stringify(localTicket)) {
+          onUpdate(localTicket);
+          lastSent.current = localTicket;
+        }
+      },
+      [localTicket],
+      300,
+    );
+
     return (
       <TableRow ref={ref} style={style} className="hover:bg-slate-50">
         {disableDrag ? (
@@ -65,15 +86,24 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         {/* Criticidade */}
         <TableCell className={`w-28 shrink-0 ${cellDivider}`}>
           <Select
-            value={ticket.priority}
+            value={localTicket.priority}
             onValueChange={(value) => {
               if (PRIORITIES.includes(value as Ticket["priority"])) {
-                onUpdate({ ...ticket, priority: value as Ticket["priority"] });
+                setLocalTicket({
+                  ...localTicket,
+                  priority: value as Ticket["priority"],
+                });
+                onUpdate({
+                  ...localTicket,
+                  priority: value as Ticket["priority"],
+                });
               }
             }}
           >
             <SelectTrigger>
-              <Badge className={`${criticidadeColorMap[ticket.priority]} w-20`}>
+              <Badge
+                className={`${criticidadeColorMap[localTicket.priority]} w-20`}
+              >
                 <SelectValue />
               </Badge>
             </SelectTrigger>
@@ -90,46 +120,62 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         {/* Ticket ID */}
         <TableCell className={`w-32 shrink-0 ${cellDivider}`}>
           <Input
-            value={ticket.ticketId}
-            onChange={(e) => onUpdate({ ...ticket, ticketId: e.target.value })}
+            value={localTicket.ticketId}
+            onChange={(e) =>
+              setLocalTicket({ ...localTicket, ticketId: e.target.value })
+            }
+            onBlur={() => onUpdate(localTicket)}
           />
         </TableCell>
 
         {/* Idade */}
         <TableCell className={`w-24 shrink-0 ${cellDivider}`}>
-          {ticket.age}
+          {localTicket.age}
         </TableCell>
 
         {/* Título */}
         <TableCell className={`lg:table-cell w-72 shrink-0 ${cellDivider}`}>
           <Input
-            value={ticket.title}
-            onChange={(e) => onUpdate({ ...ticket, title: e.target.value })}
+            value={localTicket.title}
+            onChange={(e) =>
+              setLocalTicket({ ...localTicket, title: e.target.value })
+            }
+            onBlur={() => onUpdate(localTicket)}
           />
         </TableCell>
 
         {/* Proprietário */}
         <TableCell className={`md:table-cell w-52 shrink-0 ${cellDivider}`}>
           <Input
-            value={ticket.owner}
-            onChange={(e) => onUpdate({ ...ticket, owner: e.target.value })}
+            value={localTicket.owner}
+            onChange={(e) =>
+              setLocalTicket({ ...localTicket, owner: e.target.value })
+            }
+            onBlur={() => onUpdate(localTicket)}
           />
         </TableCell>
 
         {/* Status */}
         <TableCell className={`w-36 shrink-0 ${cellDivider}`}>
           <Select
-            value={ticket.status}
+            value={localTicket.status}
             onValueChange={(value) => {
               if (STATUSES.includes(value as Ticket["status"])) {
-                onUpdate({ ...ticket, status: value as Ticket["status"] });
+                setLocalTicket({
+                  ...localTicket,
+                  status: value as Ticket["status"],
+                });
+                onUpdate({
+                  ...localTicket,
+                  status: value as Ticket["status"],
+                });
               }
             }}
           >
             <SelectTrigger>
               <Badge
                 className={`${
-                  statusBadgeColorMap[ticket.status]
+                  statusBadgeColorMap[localTicket.status]
                 } w-32 justify-center`}
               >
                 <SelectValue />
@@ -146,11 +192,16 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
 
         {/* Nota — COLUNA PRIORITÁRIA */}
-        <TableCell className={`xl:table-cell flex-1 min-w-[300px] ${cellDivider}`}>
+        <TableCell
+          className={`xl:table-cell flex-1 min-w-[300px] ${cellDivider}`}
+        >
           <Textarea
             placeholder="Adicionar nota…"
-            value={ticket.note ?? ""}
-            onChange={(e) => onUpdate({ ...ticket, note: e.target.value })}
+            value={localTicket.note ?? ""}
+            onChange={(e) =>
+              setLocalTicket({ ...localTicket, note: e.target.value })
+            }
+            onBlur={() => onUpdate(localTicket)}
             className="
               w-full
               min-h-[44px]
@@ -171,7 +222,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
         </TableCell>
       </TableRow>
     );
-  }
+  },
 );
 
 TicketRow.displayName = "TicketRow";

@@ -40,12 +40,12 @@ import { Ticket } from "@/types/Ticket";
 import { TicketColumns } from "./TicketColumns";
 import { reorder } from "@/utils/reorder";
 import { TicketRow } from "./TicketRow";
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 
 type TicketTableProps = {
   data: Ticket[];
   onReorder?: (orderedIds: number[]) => void;
-  onChange?: (tickets: Ticket[]) => void;
+  onChange?: (updater: (prev: Ticket[]) => Ticket[]) => void;
   disableDrag?: boolean;
   onDeleteTicket?: (id: number) => void;
 };
@@ -58,7 +58,7 @@ type DraggableRowProps = {
   disableDrag?: boolean;
 };
 
-function DraggableRow({
+const DraggableRow = React.memo(function DraggableRow({
   row,
   data,
   onUpdateTicket,
@@ -95,7 +95,7 @@ function DraggableRow({
       onDelete={onDeleteTicket}
     />
   );
-}
+});
 
 export function TicketTable({
   data,
@@ -138,11 +138,13 @@ export function TicketTable({
   }
 
   const handleUpdateTicket = useCallback(
-    (updated: Ticket) => {
-      onChange?.(data.map((t) => (t.id === updated.id ? updated : t)));
-    },
-    [data, onChange]
-  );
+  (updated: Ticket) => {
+    onChange?.((prev) =>
+      prev.map((t) => (t.id === updated.id ? updated : t))
+    );
+  },
+  [onChange]
+);
 
   return (
     <div className="rounded-lg border bg-background shadow-sm">

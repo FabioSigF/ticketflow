@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
   title: "TicketFlow",
@@ -21,9 +22,13 @@ export default function RootLayout({
           <div className="mx-auto flex h-16 items-center justify-between px-6">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-md bg-primary text-primary-foreground flex items-center justify-center font-bold">
-                TF
-              </div>
+              <Image
+                src="/images/otrs-synchronizer-logo.png"
+                alt="TicketFlow Logo"
+                width={32}
+                height={32}
+                priority
+              />
               <span className="text-lg font-semibold">Ticket Flow</span>
             </div>
 

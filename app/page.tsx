@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import { Ticket } from "@/types/Ticket";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
@@ -125,20 +125,16 @@ export default function HomePage() {
   }
 
   // Mescla um slice de tickets atualizados no estado
-  function mergeTickets(updatedSlice: Ticket[]) {
+  const mergeTickets = useCallback(
+  (updater: (prev: Ticket[]) => Ticket[]) => {
     setTickets((prev) => {
-      const map = new Map(prev.map((t) => [t.id, t]));
-
-      updatedSlice.forEach((ticket) => {
-        map.set(ticket.id, ticket);
-      });
-
-      const merged = Array.from(map.values());
-      persist(merged);
-
-      return merged;
+      const updated = updater(prev);
+      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+      return updated;
     });
-  }
+  },
+  []
+);
 
   // Remove um ticket pelo ID
   function handleDeleteTicket(id: number) {
