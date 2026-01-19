@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Link from "next/link";
 import Image from "next/image";
+import { Github, Linkedin } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "TicketFlow",
@@ -48,7 +49,7 @@ export default function RootLayout({
                 href="/otrs-ticket-sync"
                 className="hover:text-foreground transition"
               >
-                OTRS Ticket Sync
+                Como sincronizar com OTRS?
               </Link>
               <Link
                 href="https://github.com/FabioSigF/ticketflow"
@@ -78,17 +79,20 @@ export default function RootLayout({
                 href="https://github.com/FabioSigF"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-foreground transition"
+                className="flex items-center gap-2 hover:text-foreground transition"
               >
-                GitHub
+                <Github className="w-5 h-5" />
+                <span>GitHub</span>
               </a>
+
               <a
                 href="https://www.linkedin.com/in/fabio-signorini/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="hover:text-foreground transition"
+                className="flex items-center gap-2 hover:text-foreground transition"
               >
-                LinkedIn
+                <Linkedin className="w-5 h-5" />
+                <span>LinkedIn</span>
               </a>
             </div>
           </div>
