@@ -95,7 +95,7 @@ export default function OtrsTicketSyncPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">3. Acessar o OTRS</h2>
         <p>
-          Entre normalmente no sistema OTRS e abra a fila de tickets Bloqueados.
+          Entre normalmente no sistema OTRS e abra a fila de tickets <strong>Meus Chamados Bloqueados</strong>.
         </p>
         <Image
           src="/images/tutorial/step3.png"
@@ -140,8 +140,7 @@ export default function OtrsTicketSyncPage() {
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">5. Conferir os tickets</h2>
         <p>
-          Após a sincronização, seus tickets aparecerão automaticamente na fila{" "}
-          <strong>Em andamento</strong> do Ticket Flow. Tickets duplicados serão
+          Após a sincronização, seus tickets aparecerão automaticamente na fila <strong>Em andamento</strong> do Ticket Flow. Tickets duplicados serão
           atualizados automaticamente.
         </p>
         <p>Agora já está tudo pronto para você começar a usar o Ticket Flow!</p>
