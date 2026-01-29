@@ -46,34 +46,28 @@ export default function HomePage() {
           const prevMap = new Map<string, Ticket>();
 
           prev.forEach((ticket) => {
-            if (ticket.ticketId) {
-              prevMap.set(ticket.ticketId, ticket);
-            }
+            const key = ticket.ticketId || `local-${ticket.id}`;
+            prevMap.set(key, ticket);
           });
 
           const mapped = mapOtrsToTickets(otrsTickets, prev);
 
           mapped.forEach((incoming) => {
-            const existing = prevMap.get(incoming.ticketId);
+            const key = incoming.ticketId || `local-${incoming.id}`;
+            const existing = prevMap.get(key);
 
-            if (existing) {
-              // Atualiza apenas a idade do ticket
-              prevMap.set(incoming.ticketId, {
-                ...existing,
-                age: incoming.age,
-              });
-            } else {
-              prevMap.set(incoming.ticketId, incoming);
-            }
+            prevMap.set(key, {
+              ...(existing ?? incoming),
+              age: incoming.age,
+              lastSync: Date.now(), // 🔥 força re-render
+            });
           });
 
-          const merged = Array.from(prevMap.values()).sort(sortByAge);
-
-          persist(merged);
-          return merged;
+          const merged = Array.from(prevMap.values());
+          return merged.sort((a, b) => a.orderIndex - b.orderIndex);
         });
 
-        console.log("OTRS tickets persisted in progress queue");
+        console.log("OTRS tickets synced");
       }
     }
 
@@ -81,31 +75,59 @@ export default function HomePage() {
     return () => window.removeEventListener("message", handleMessage);
   }, []);
 
+  useEffect(() => {
+    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(tickets));
+  }, [tickets]);
+
   // Mapeia tickets do OTRS para o formato interno de Ticket
   function mapOtrsToTickets(
     otrsTickets: OTRSTicket[],
-    currentTickets: Ticket[]
+    currentTickets: Ticket[],
   ): Ticket[] {
-    const lastId =
+    const ticketMap = new Map(
+      currentTickets.filter((t) => t.ticketId).map((t) => [t.ticketId!, t]),
+    );
+
+    let nextId =
       currentTickets.length > 0
-        ? Math.max(...currentTickets.map((t) => t.id))
+        ? Math.max(...currentTickets.map((t) => t.id)) + 1
+        : 1;
+
+    let nextOrder =
+      currentTickets.length > 0
+        ? Math.max(...currentTickets.map((t) => t.orderIndex)) + 1
         : 0;
 
-    let nextId = lastId + 1;
+    return otrsTickets.map((otrs) => {
+      const existing = ticketMap.get(otrs.ticketId);
 
-    return otrsTickets.map((otrs) => ({
-      id: nextId++,
-      ticketId: otrs.ticketId,
-      title: otrs.title,
-      owner: otrs.owner,
-      priority: parseOTRSPriorityToTicket(otrs.priority),
-      age: otrs.age,
-      status: "Pendente",
-    }));
+      if (existing) {
+        return {
+          ...existing,
+          title: otrs.title,
+          owner: otrs.owner,
+          priority: parseOTRSPriorityToTicket(otrs.priority),
+          age: otrs.age,
+          lastSync: Date.now(),
+        };
+      }
+
+      return {
+        id: nextId++,
+        ticketId: otrs.ticketId,
+        title: otrs.title,
+        owner: otrs.owner,
+        priority: parseOTRSPriorityToTicket(otrs.priority),
+        age: otrs.age,
+        status: "Pendente",
+        orderIndex: nextOrder++, // 🔥 NOVOS SEMPRE NO FINAL
+        lastSync: Date.now(),
+      };
+    });
   }
 
   // Cria um ticket vazio
-  function createEmptyTicket(id: number): Ticket {
+  function createEmptyTicket(id: number, orderIndex: number): Ticket {
     return {
       id,
       ticketId: "",
@@ -115,6 +137,8 @@ export default function HomePage() {
       owner: "",
       status: "Pendente",
       note: "",
+      lastSync: Date.now(),
+      orderIndex,
     };
   }
 
@@ -125,16 +149,13 @@ export default function HomePage() {
   }
 
   // Mescla um slice de tickets atualizados no estado
-  const mergeTickets = useCallback(
-  (updater: (prev: Ticket[]) => Ticket[]) => {
+  const mergeTickets = useCallback((updater: (prev: Ticket[]) => Ticket[]) => {
     setTickets((prev) => {
       const updated = updater(prev);
       localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
       return updated;
     });
-  },
-  []
-);
+  }, []);
 
   // Remove um ticket pelo ID
   function handleDeleteTicket(id: number) {
@@ -150,12 +171,10 @@ export default function HomePage() {
     const nextId =
       tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
 
-    persist([
-      ...tickets,
-      {
-        ...createEmptyTicket(nextId),
-      },
-    ]);
+    const maxOrder =
+      tickets.length > 0 ? Math.max(...tickets.map((t) => t.orderIndex)) : 0;
+
+    persist([...tickets, createEmptyTicket(nextId, maxOrder + 1)]);
   }
 
   // ============ Funções relacionadas à limpeza de tabela ==================
@@ -220,15 +239,15 @@ export default function HomePage() {
 
   // ============ Funções relacionadas à troca de tabs (status) ==================
   function isInProgressStatus(
-    status: Ticket["status"]
+    status: Ticket["status"],
   ): status is (typeof IN_PROGRESS_STATUSES)[number] {
     return IN_PROGRESS_STATUSES.includes(
-      status as (typeof IN_PROGRESS_STATUSES)[number]
+      status as (typeof IN_PROGRESS_STATUSES)[number],
     );
   }
 
   function isDoneStatus(
-    status: Ticket["status"]
+    status: Ticket["status"],
   ): status is (typeof DONE_STATUSES)[number] {
     return DONE_STATUSES.includes(status as (typeof DONE_STATUSES)[number]);
   }
@@ -252,9 +271,9 @@ export default function HomePage() {
     );
   });
 
-  const inProgressTickets = searchedTickets.filter((t) =>
-    isInProgressStatus(t.status)
-  );
+  const inProgressTickets = searchedTickets
+    .filter((t) => isInProgressStatus(t.status))
+    .sort((a, b) => a.orderIndex - b.orderIndex);
 
   const doneTickets = searchedTickets
     .filter((t) => isDoneStatus(t.status))
@@ -263,15 +282,13 @@ export default function HomePage() {
   // ============ Reordenamento para TicketTable ==================
   function handleReorderInProgress(orderedIds: number[]) {
     setTickets((prev) => {
-      const inProgress = prev.filter((t) => isInProgressStatus(t.status));
-      const others = prev.filter((t) => !isInProgressStatus(t.status));
+      const updated = prev.map((ticket) => {
+        const index = orderedIds.indexOf(ticket.id);
+        return index !== -1 ? { ...ticket, orderIndex: index } : ticket;
+      });
 
-      const ordered = orderedIds
-        .map((id) => inProgress.find((t) => t.id === id))
-        .filter(Boolean) as Ticket[];
-
-      const updated = [...ordered, ...others];
       localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
+
       return updated;
     });
   }

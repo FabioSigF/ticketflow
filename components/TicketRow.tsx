@@ -59,7 +59,15 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
     useEffect(() => {
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setLocalTicket(ticket);
-    }, [ticket.id]);
+    }, [
+      ticket,
+      ticket.age,
+      ticket.priority,
+      ticket.status,
+      ticket.title,
+      ticket.owner,
+      ticket.note,
+    ]);
 
     const lastSent = useRef<Ticket>(localTicket);
 

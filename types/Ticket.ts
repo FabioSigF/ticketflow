@@ -7,4 +7,6 @@ export type Ticket = {
   owner: string
   status: 'Pendente' | 'Em atendimento' | 'Aguardando resposta' | 'Encerrado' | 'Movido' | 'Desbloqueado'
   note?: string
+  lastSync?: number
+  orderIndex: number;
 }
