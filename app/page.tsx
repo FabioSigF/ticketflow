@@ -13,7 +13,6 @@ import {
   IN_PROGRESS_STATUSES,
   DONE_STATUSES,
 } from "@/constants/ticketStatuses";
-import { sortByAge } from "@/utils/ticketSorting";
 
 type TicketTab = "progress" | "done";
 
@@ -151,7 +150,7 @@ export default function HomePage() {
   // Mescla um slice de tickets atualizados no estado
   const mergeTickets = useCallback((updater: (prev: Ticket[]) => Ticket[]) => {
     setTickets((prev) => {
-      const updated = updater(prev);
+      const updated = updater(prev).map((t) => ({ ...t }));
       localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
       return updated;
     });
@@ -428,6 +427,7 @@ export default function HomePage() {
                 onChange={mergeTickets}
                 disableDrag
                 onDeleteTicket={handleDeleteTicket}
+                groupByClosedDate
               />
             )}
           </TabsContent>

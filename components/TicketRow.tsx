@@ -14,6 +14,7 @@ import { Ticket } from "@/types/Ticket";
 import { Button } from "./ui/button";
 import { Trash2 } from "lucide-react";
 import { useDebouncedEffect } from "@/hooks/useDebouncedEffect";
+import { isDoneStatus } from "@/utils/ticketStatus";
 
 type TicketRowProps = {
   ticket: Ticket;
@@ -168,16 +169,20 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
           <Select
             value={localTicket.status}
             onValueChange={(value) => {
-              if (STATUSES.includes(value as Ticket["status"])) {
-                setLocalTicket({
-                  ...localTicket,
-                  status: value as Ticket["status"],
-                });
-                onUpdate({
-                  ...localTicket,
-                  status: value as Ticket["status"],
-                });
-              }
+              if (!STATUSES.includes(value as Ticket["status"])) return;
+
+              const wasDone = isDoneStatus(localTicket.status);
+              const isDone = isDoneStatus(value as Ticket["status"]);
+
+              const updated: Ticket = {
+                ...localTicket,
+                status: value as Ticket["status"],
+                ...(isDone && !wasDone ? { closedAt: Date.now() } : {}),
+                ...(!isDone && wasDone ? { closedAt: undefined } : {}),
+              };
+
+              setLocalTicket(updated);
+              onUpdate(updated);
             }}
           >
             <SelectTrigger>

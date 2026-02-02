@@ -9,4 +9,5 @@ export type Ticket = {
   note?: string
   lastSync?: number
   orderIndex: number;
+  closedAt?: number;
 }
