@@ -150,13 +150,27 @@ export function TicketTable({
   );
 
   const groupedRows = React.useMemo(() => {
+    const rows = table.getRowModel().rows;
+
     if (!groupByClosedDate) {
-      return [{ label: null, rows: table.getRowModel().rows }];
+      return [{ label: null, rows }];
     }
 
+    // 1️⃣ Ordena por closedAt (desc), sem data por último
+    const sortedRows = [...rows].sort((a, b) => {
+      const aDate = a.original.closedAt;
+      const bDate = b.original.closedAt;
+
+      if (aDate && bDate) return bDate - aDate; // mais recente primeiro
+      if (aDate) return -1; // a tem data, b não
+      if (bDate) return 1; // b tem data, a não
+      return 0; // ambos sem data
+    });
+
+    // 2️⃣ Agrupa após ordenação
     const groups = new Map<string, Row<Ticket>[]>();
 
-    table.getRowModel().rows.forEach((row) => {
+    sortedRows.forEach((row) => {
       const label = row.original.closedAt
         ? formatClosedDate(row.original.closedAt)
         : "Sem data";
