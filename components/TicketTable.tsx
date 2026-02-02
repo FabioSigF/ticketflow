@@ -156,21 +156,23 @@ export function TicketTable({
       return [{ label: null, rows }];
     }
 
-    // 1️⃣ Ordena por closedAt (desc), sem data por último
-    const sortedRows = [...rows].sort((a, b) => {
-      const aDate = a.original.closedAt;
-      const bDate = b.original.closedAt;
+    const hasActiveSorting = sorting.length > 0;
 
-      if (aDate && bDate) return bDate - aDate; // mais recente primeiro
-      if (aDate) return -1; // a tem data, b não
-      if (bDate) return 1; // b tem data, a não
-      return 0; // ambos sem data
-    });
+    const rowsToGroup = hasActiveSorting
+      ? rows // 🔥 respeita sorting do TanStack
+      : [...rows].sort((a, b) => {
+          const aDate = a.original.closedAt;
+          const bDate = b.original.closedAt;
 
-    // 2️⃣ Agrupa após ordenação
+          if (aDate && bDate) return bDate - aDate;
+          if (aDate) return -1;
+          if (bDate) return 1;
+          return 0;
+        });
+
     const groups = new Map<string, Row<Ticket>[]>();
 
-    sortedRows.forEach((row) => {
+    rowsToGroup.forEach((row) => {
       const label = row.original.closedAt
         ? formatClosedDate(row.original.closedAt)
         : "Sem data";
@@ -183,7 +185,7 @@ export function TicketTable({
       label,
       rows,
     }));
-  }, [data, groupByClosedDate]);
+  }, [data, groupByClosedDate, sorting]);
 
   return (
     <div className="rounded-lg border bg-background shadow-sm">
