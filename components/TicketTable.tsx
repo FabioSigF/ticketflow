@@ -237,7 +237,7 @@ export function TicketTable({
               font-semibold
               uppercase
               text-muted-foreground
-              px-4
+              px-14
               py-2
             "
                         >
