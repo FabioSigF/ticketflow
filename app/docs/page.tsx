@@ -22,13 +22,13 @@ export default function DocumentationPage() {
           <DocActionCard
             title="Reordenar tickets"
             description="Aprenda a reorganizar seus tickets para priorizar atendimentos."
-            href="/documentation/reorder"
+            href="/docs/reorder"
           />
 
           <DocActionCard
             title="Sincronizar tickets com o OTRS"
             description="Veja como integrar o OTRS ao Ticket Flow usando a extensão."
-            href="/documentation/sync-otrs"
+            href="/docs/sync-otrs"
           />
         </div>
       </section>
