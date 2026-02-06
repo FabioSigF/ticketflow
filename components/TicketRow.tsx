@@ -84,7 +84,7 @@ export const TicketRow = forwardRef<HTMLTableRowElement, TicketRowProps>(
     );
 
     return (
-      <TableRow ref={ref} style={style} className="hover:bg-slate-50">
+      <TableRow ref={ref} style={style} className="">
         {disableDrag ? (
           <TableCell className={`w-8 shrink-0 ${cellDivider}`} />
         ) : (

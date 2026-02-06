@@ -357,7 +357,7 @@ export default function HomePage() {
       </div>
 
       {/* Main Card */}
-      <div className="rounded-xl border px-6 py-4">
+      <div className="rounded-xl border-border border px-6 py-4">
         {/* Card Header */}
         <div className="flex items-center justify-between gap-4">
           <Input

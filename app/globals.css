@@ -21,8 +21,8 @@ body {
   min-height: 100vh;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
     Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   line-height: 1.5;
 }
 
@@ -104,3 +104,62 @@ td {
   background: #94a3b8;
 }
 
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 214 32% 91%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+
+  --primary: 28 100% 57%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 210 4% 8%;
+  --foreground: 210 40% 98%;
+
+  --card: 222 47% 9%;
+  --card-foreground: 210 40% 98%;
+
+  --popover: 222 47% 9%;
+  --popover-foreground: 210 40% 98%;
+
+  --border: 217 33% 17%;
+  --input: transparent;
+  --ring: 217 33% 17%;
+
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20% 65%;
+
+  --accent: 217 33% 17%;
+  --accent-foreground: 210 40% 98%;
+
+  --primary: 28 100% 57%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 217 33% 17%;
+  --secondary-foreground: 210 40% 98%;
+
+  --destructive: 0 63% 31%;
+  --destructive-foreground: 210 40% 98%;
+}

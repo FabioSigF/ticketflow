@@ -188,7 +188,7 @@ export function TicketTable({
   }, [data, groupByClosedDate, sorting]);
 
   return (
-    <div className="rounded-lg border bg-background shadow-sm">
+    <div className="rounded-lg border border-border bg-background shadow-sm">
       {/* Scroll container */}
       <div className="overflow-x-auto overscroll-x-contain">
         <DndContext

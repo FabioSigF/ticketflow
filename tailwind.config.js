@@ -1,9 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  content: [
-    "./app/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-  ],
+  darkMode: ["class"],
+  content: ["./app/**/*.{ts,tsx}", "./components/**/*.{ts,tsx}"],
   theme: {
     container: {
       center: true,
@@ -14,51 +12,48 @@ module.exports = {
     },
     extend: {
       colors: {
-        /* === Base tokens (shadcn) === */
-        background: "#f8fafc",
-        foreground: "#0f172a",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
 
         card: {
-          DEFAULT: "#ffffff",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--card))",
+          foreground: "hsl(var(--card-foreground))",
         },
 
         popover: {
-          DEFAULT: "#ffffff",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--popover))",
+          foreground: "hsl(var(--popover-foreground))",
         },
 
-        border: "#e2e8f0",
-        input: "#e2e8f0",
-        ring: "#e2e8f0",
+        border: "hsl(var(--border))",
+        input: "hsl(var(--input))",
+        ring: "hsl(var(--ring))",
 
         muted: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#64748b",
+          DEFAULT: "hsl(var(--muted))",
+          foreground: "hsl(var(--muted-foreground))",
         },
 
         accent: {
-          DEFAULT: "#f1f5f9",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--accent))",
+          foreground: "hsl(var(--accent-foreground))",
         },
 
-        /* === Brand / primary === */
         primary: {
-          DEFAULT: "#FF8A25",
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--primary))",
+          foreground: "hsl(var(--primary-foreground))",
         },
 
         secondary: {
-          DEFAULT: "#e2e8f0",
-          foreground: "#0f172a",
+          DEFAULT: "hsl(var(--secondary))",
+          foreground: "hsl(var(--secondary-foreground))",
         },
 
         destructive: {
-          DEFAULT: "#dc2626",
-          foreground: "#ffffff",
+          DEFAULT: "hsl(var(--destructive))",
+          foreground: "hsl(var(--destructive-foreground))",
         },
 
-        /* === Ticket status === */
         status: {
           pendente: "#d97706",
           atendimento: "#FF8A25",
@@ -66,7 +61,6 @@ module.exports = {
           finalizado: "#16a34a",
         },
       },
-
       borderRadius: {
         lg: "0.75rem",
         md: "0.5rem",
@@ -95,5 +89,4 @@ module.exports = {
     },
   },
   plugins: [],
-}
-
+};
