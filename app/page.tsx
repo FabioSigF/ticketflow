@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { TicketTable } from "@/components/TicketTable";
 import { Ticket } from "@/types/Ticket";
 import { STORAGE_KEYS } from "@/constants/storageKeys";
@@ -13,105 +13,61 @@ import {
   IN_PROGRESS_STATUSES,
   DONE_STATUSES,
 } from "@/constants/ticketStatuses";
+import { ReopenTicketsDialog } from "@/components/ReopenTicketsDialog";
 
 type TicketTab = "progress" | "done";
 
-export default function HomePage() {
-  const [tickets, setTickets] = useState<Ticket[]>(() => {
-    if (typeof window === "undefined") return [];
+/* =========================================
+   TYPE GUARDS (SEM ANY)
+========================================= */
 
-    const stored = localStorage.getItem(STORAGE_KEYS.TICKETS);
-    return stored ? (JSON.parse(stored) as Ticket[]) : [];
+function isDoneStatus(
+  status: Ticket["status"],
+): status is (typeof DONE_STATUSES)[number] {
+  return DONE_STATUSES.includes(
+    status as (typeof DONE_STATUSES)[number],
+  );
+}
+
+function isInProgressStatus(
+  status: Ticket["status"],
+): status is (typeof IN_PROGRESS_STATUSES)[number] {
+  return IN_PROGRESS_STATUSES.includes(
+    status as (typeof IN_PROGRESS_STATUSES)[number],
+  );
+}
+
+/* =========================================
+   MERGE ÚNICO DE SINCRONIZAÇÃO
+========================================= */
+
+function mergeOtrsTickets(
+  current: Ticket[],
+  otrsTickets: OTRSTicket[],
+  reopenIds: number[] = [],
+): Ticket[] {
+  const map = new Map<string, Ticket>();
+
+  current.forEach((ticket) => {
+    const key = ticket.ticketId || `local-${ticket.id}`;
+    map.set(key, ticket);
   });
 
-  const [activeTab, setActiveTab] = useState<TicketTab>("progress");
-  const [search, setSearch] = useState("");
+  let nextId =
+    current.length > 0
+      ? Math.max(...current.map((t) => t.id)) + 1
+      : 1;
 
-  // Undo clear state
-  const [clearedTickets, setClearedTickets] = useState<Ticket[] | null>(null);
-  const [undoVisible, setUndoVisible] = useState(false);
-  const [undoSeconds, setUndoSeconds] = useState<number | null>(null);
+  let nextOrder =
+    current.length > 0
+      ? Math.max(...current.map((t) => t.orderIndex)) + 1
+      : 0;
 
-  const undoIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  otrsTickets.forEach((otrs) => {
+    const existing = map.get(otrs.ticketId);
 
-  // Ouvir mensagens do OTRS Ticket Sync
-  useEffect(() => {
-    function handleMessage(event: MessageEvent) {
-      if (event.data?.type === "OTRS_TICKETS_SYNC") {
-        const otrsTickets = event.data.payload;
-
-        setTickets((prev) => {
-          const prevMap = new Map<string, Ticket>();
-
-          prev.forEach((ticket) => {
-            const key = ticket.ticketId || `local-${ticket.id}`;
-            prevMap.set(key, ticket);
-          });
-
-          const mapped = mapOtrsToTickets(otrsTickets, prev);
-
-          mapped.forEach((incoming) => {
-            const key = incoming.ticketId || `local-${incoming.id}`;
-            const existing = prevMap.get(key);
-
-            prevMap.set(key, {
-              ...(existing ?? incoming),
-              age: incoming.age,
-              lastSync: Date.now(), // 🔥 força re-render
-            });
-          });
-
-          const merged = Array.from(prevMap.values());
-          return merged.sort((a, b) => a.orderIndex - b.orderIndex);
-        });
-
-        console.log("OTRS tickets synced");
-      }
-    }
-
-    window.addEventListener("message", handleMessage);
-    return () => window.removeEventListener("message", handleMessage);
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(tickets));
-  }, [tickets]);
-
-  // Mapeia tickets do OTRS para o formato interno de Ticket
-  function mapOtrsToTickets(
-    otrsTickets: OTRSTicket[],
-    currentTickets: Ticket[],
-  ): Ticket[] {
-    const ticketMap = new Map(
-      currentTickets.filter((t) => t.ticketId).map((t) => [t.ticketId!, t]),
-    );
-
-    let nextId =
-      currentTickets.length > 0
-        ? Math.max(...currentTickets.map((t) => t.id)) + 1
-        : 1;
-
-    let nextOrder =
-      currentTickets.length > 0
-        ? Math.max(...currentTickets.map((t) => t.orderIndex)) + 1
-        : 0;
-
-    return otrsTickets.map((otrs) => {
-      const existing = ticketMap.get(otrs.ticketId);
-
-      if (existing) {
-        return {
-          ...existing,
-          title: otrs.title,
-          owner: otrs.owner,
-          priority: parseOTRSPriorityToTicket(otrs.priority),
-          age: otrs.age,
-          lastSync: Date.now(),
-        };
-      }
-
-      return {
+    if (!existing) {
+      const newTicket: Ticket = {
         id: nextId++,
         ticketId: otrs.ticketId,
         title: otrs.title,
@@ -119,154 +75,148 @@ export default function HomePage() {
         priority: parseOTRSPriorityToTicket(otrs.priority),
         age: otrs.age,
         status: "Pendente",
-        orderIndex: nextOrder++, // 🔥 NOVOS SEMPRE NO FINAL
+        note: "",
+        orderIndex: nextOrder++,
         lastSync: Date.now(),
       };
-    });
-  }
 
-  // Cria um ticket vazio
-  function createEmptyTicket(id: number, orderIndex: number): Ticket {
-    return {
-      id,
-      ticketId: "",
-      priority: "Baixa",
-      title: "",
-      age: "0 min",
-      owner: "",
-      status: "Pendente",
-      note: "",
+      map.set(otrs.ticketId, newTicket);
+      return;
+    }
+
+    const shouldReopen = reopenIds.includes(existing.id);
+
+    const updated: Ticket = {
+      ...existing,
+      title: otrs.title,
+      owner: otrs.owner,
+      priority: parseOTRSPriorityToTicket(otrs.priority),
+      age: otrs.age,
+      status: shouldReopen ? "Pendente" : existing.status,
+      orderIndex: shouldReopen ? nextOrder++ : existing.orderIndex,
       lastSync: Date.now(),
-      orderIndex,
     };
-  }
 
-  // Persiste tickets no estado e no localStorage
-  function persist(updated: Ticket[]) {
-    setTickets(updated);
-    localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
-  }
+    map.set(otrs.ticketId, updated);
+  });
 
-  // Mescla um slice de tickets atualizados no estado
-  const mergeTickets = useCallback((updater: (prev: Ticket[]) => Ticket[]) => {
-    setTickets((prev) => {
-      const updated = updater(prev).map((t) => ({ ...t }));
-      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
-      return updated;
-    });
+  return Array.from(map.values()).sort(
+    (a, b) => a.orderIndex - b.orderIndex,
+  );
+}
+
+export default function HomePage() {
+  const [tickets, setTickets] = useState<Ticket[]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem(STORAGE_KEYS.TICKETS);
+    return stored ? (JSON.parse(stored) as Ticket[]) : [];
+  });
+
+  const [activeTab, setActiveTab] =
+    useState<TicketTab>("progress");
+
+  const [search, setSearch] = useState("");
+
+  const [reopenCandidates, setReopenCandidates] =
+    useState<Ticket[]>([]);
+
+  const [pendingOtrsSync, setPendingOtrsSync] =
+    useState<OTRSTicket[] | null>(null);
+
+  const [reopenDialogOpen, setReopenDialogOpen] =
+    useState(false);
+
+  /* =========================================
+     OTRS SYNC LISTENER
+  ========================================= */
+
+  useEffect(() => {
+    function handleMessage(event: MessageEvent) {
+      if (event.data?.type !== "OTRS_TICKETS_SYNC") return;
+
+      const otrsTickets: OTRSTicket[] =
+        event.data.payload;
+
+      setTickets((prev) => {
+        const conflicts = prev.filter(
+          (ticket) =>
+            isDoneStatus(ticket.status) &&
+            otrsTickets.some(
+              (otrs) => otrs.ticketId === ticket.ticketId,
+            ),
+        );
+
+        if (conflicts.length > 0) {
+          setReopenCandidates(conflicts);
+          setPendingOtrsSync(otrsTickets);
+          setReopenDialogOpen(true);
+          return prev;
+        }
+
+        return mergeOtrsTickets(prev, otrsTickets);
+      });
+    }
+
+    window.addEventListener("message", handleMessage);
+
+    return () =>
+      window.removeEventListener("message", handleMessage);
   }, []);
 
-  // Remove um ticket pelo ID
+  /* =========================================
+     PERSISTÊNCIA CENTRALIZADA
+  ========================================= */
+
+  useEffect(() => {
+    localStorage.setItem(
+      STORAGE_KEYS.TICKETS,
+      JSON.stringify(tickets),
+    );
+  }, [tickets]);
+
+  function confirmReopen(ids: number[]) {
+    if (!pendingOtrsSync) return;
+
+    setTickets((prev) =>
+      mergeOtrsTickets(prev, pendingOtrsSync, ids),
+    );
+
+    setPendingOtrsSync(null);
+    setReopenCandidates([]);
+    setReopenDialogOpen(false);
+  }
+
   function handleDeleteTicket(id: number) {
-    setTickets((prev) => {
-      const updated = prev.filter((t) => t.id !== id);
-      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
-      return updated;
-    });
-  }
-
-  // Cria um novo ticket vazio
-  function handleAddTicket() {
-    const nextId =
-      tickets.length > 0 ? Math.max(...tickets.map((t) => t.id)) + 1 : 1;
-
-    const maxOrder =
-      tickets.length > 0 ? Math.max(...tickets.map((t) => t.orderIndex)) : 0;
-
-    persist([...tickets, createEmptyTicket(nextId, maxOrder + 1)]);
-  }
-
-  // ============ Funções relacionadas à limpeza de tabela ==================
-  // Limpa todos os tickets da tabela
-  function handleClearTable() {
-    resetUndo();
-
-    // Guarda TODOS os tickets atuais
-    setClearedTickets(tickets);
-
-    setUndoVisible(true);
-    setUndoSeconds(30);
-
-    setTickets([]);
-    persist([]);
-
-    undoIntervalRef.current = setInterval(() => {
-      setUndoSeconds((prev) => {
-        if (!prev || prev <= 1) {
-          resetUndo();
-          return null;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    undoTimeoutRef.current = setTimeout(resetUndo, 30_000);
-  }
-  // Restaura os tickets removidos na última limpeza
-  function handleUndoClear() {
-    if (!clearedTickets) return;
-
-    setTickets((current) => {
-      const restoredIds = new Set(clearedTickets.map((t) => t.id));
-
-      // Mantém tickets criados depois da limpeza
-      const newTickets = current.filter((t) => !restoredIds.has(t.id));
-
-      const merged = [...clearedTickets, ...newTickets];
-      persist(merged);
-      return merged;
-    });
-
-    resetUndo();
-  }
-  // Reseta o estado do undo
-  function resetUndo() {
-    if (undoIntervalRef.current) {
-      clearInterval(undoIntervalRef.current);
-      undoIntervalRef.current = null;
-    }
-
-    if (undoTimeoutRef.current) {
-      clearTimeout(undoTimeoutRef.current);
-      undoTimeoutRef.current = null;
-    }
-
-    setUndoVisible(false);
-    setUndoSeconds(null);
-    setClearedTickets(null);
-  }
-
-  // ============ Funções relacionadas à troca de tabs (status) ==================
-  function isInProgressStatus(
-    status: Ticket["status"],
-  ): status is (typeof IN_PROGRESS_STATUSES)[number] {
-    return IN_PROGRESS_STATUSES.includes(
-      status as (typeof IN_PROGRESS_STATUSES)[number],
+    setTickets((prev) =>
+      prev.filter((ticket) => ticket.id !== id),
     );
   }
 
-  function isDoneStatus(
-    status: Ticket["status"],
-  ): status is (typeof DONE_STATUSES)[number] {
-    return DONE_STATUSES.includes(status as (typeof DONE_STATUSES)[number]);
+  function handleReorderInProgress(orderedIds: number[]) {
+    setTickets((prev) =>
+      prev.map((ticket) => {
+        const index = orderedIds.indexOf(ticket.id);
+        return index !== -1
+          ? { ...ticket, orderIndex: index }
+          : ticket;
+      }),
+    );
   }
 
-  function handleTabChange(value: string) {
-    if (value === "progress" || value === "done") {
-      setActiveTab(value);
-    }
-  }
+  /* =========================================
+     BUSCA
+  ========================================= */
 
-  // ============ Busca e filtragem de Tickets ==================
   const isSearching = search.trim().length > 0;
 
   const searchedTickets = tickets.filter((ticket) => {
     const q = search.toLowerCase();
+
     return (
-      ticket.title?.toLowerCase().includes(q) ||
-      ticket.owner?.toLowerCase().includes(q) ||
-      ticket.priority?.toLowerCase().includes(q) ||
-      ticket.ticketId?.toLowerCase().includes(q)
+      ticket.title.toLowerCase().includes(q) ||
+      ticket.owner.toLowerCase().includes(q) ||
+      ticket.priority.toLowerCase().includes(q) ||
+      ticket.ticketId.toLowerCase().includes(q)
     );
   });
 
@@ -278,161 +228,71 @@ export default function HomePage() {
     .filter((t) => isDoneStatus(t.status))
     .sort((a, b) => b.id - a.id);
 
-  // ============ Reordenamento para TicketTable ==================
-  function handleReorderInProgress(orderedIds: number[]) {
-    setTickets((prev) => {
-      const updated = prev.map((ticket) => {
-        const index = orderedIds.indexOf(ticket.id);
-        return index !== -1 ? { ...ticket, orderIndex: index } : ticket;
-      });
-
-      localStorage.setItem(STORAGE_KEYS.TICKETS, JSON.stringify(updated));
-
-      return updated;
-    });
-  }
-
-  // ============ Auxiliares ==================
-  // Componente para estado vazio de tickets
-  function EmptyInProgressTicketsState() {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-        <p className="text-lg font-medium text-muted-foreground">
-          Nenhum ticket encontrado
-        </p>
-
-        <p className="text-sm text-muted-foreground max-w-md">
-          Você ainda não possui tickets. Você pode sincronizar seus chamados com
-          o OTRS usando a extensão OTRS Ticket Sync ou criar um ticket
-          manualmente.
-        </p>
-
-        <div className="flex gap-2">
-          <span className="text-sm text-muted-foreground">
-            🔄 Sincronize pelo OTRS ou ➕ crie um ticket
-          </span>
-        </div>
-      </div>
-    );
-  }
-
-  function EmptyDoneTicketsState() {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center space-y-4">
-        <p className="text-lg font-medium text-muted-foreground">
-          Nenhum ticket encontrado
-        </p>
-
-        <p className="text-sm text-muted-foreground max-w-md">
-          Você ainda não possui tickets finalizados. Bora trabalhar nesses
-          chamados em andamento!
-        </p>
-      </div>
-    );
-  }
-
-  function EmptySearchState() {
-    return (
-      <div className="flex flex-col items-center justify-center py-16 text-center space-y-3">
-        <p className="text-lg font-medium text-muted-foreground">
-          Nenhum resultado encontrado
-        </p>
-
-        <p className="text-sm text-muted-foreground max-w-md">
-          Não encontramos tickets que correspondam à sua busca. Tente ajustar os
-          termos ou limpar o filtro.
-        </p>
-      </div>
-    );
-  }
+  /* =========================================
+     UI
+  ========================================= */
 
   return (
     <section className="space-y-6">
-      {/* Page title */}
       <div>
-        <h1 className="text-2xl font-semibold">Painel de Chamados</h1>
+        <h1 className="text-2xl font-semibold">
+          Painel de Chamados
+        </h1>
         <p className="text-sm text-muted-foreground">
-          Gerencie seus tickets manualmente ou sincronize com o OTRS
+          Gerencie seus tickets manualmente ou sincronize
+          com o OTRS
         </p>
       </div>
 
-      {/* Main Card */}
       <div className="rounded-xl border-border border px-6 py-4">
-        {/* Card Header */}
-        <div className="flex items-center justify-between gap-4">
-          <Input
-            className="max-w-sm"
-            placeholder="Buscar por ticket, título, proprietário ou criticidade…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
+        <Input
+          className="max-w-sm"
+          placeholder="Buscar por ticket, título, proprietário ou criticidade…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
+
+      <Tabs
+        value={activeTab}
+        onValueChange={(v) =>
+          setActiveTab(v as TicketTab)
+        }
+      >
+        <TabsList>
+          <TabsTrigger value="progress">
+            Em andamento ({inProgressTickets.length})
+          </TabsTrigger>
+          <TabsTrigger value="done">
+            Finalizados ({doneTickets.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="progress" className="mt-4">
+          <TicketTable
+            data={inProgressTickets}
+            disableDrag={isSearching}
+            onReorder={handleReorderInProgress}
+            onDeleteTicket={handleDeleteTicket}
           />
+        </TabsContent>
 
-          {activeTab === "progress" && (
-            <div className="flex gap-2">
-              {undoVisible && undoSeconds !== null ? (
-                <Button variant="secondary" onClick={handleUndoClear}>
-                  Reverter limpeza ({undoSeconds}s)
-                </Button>
-              ) : (
-                <Button variant="outline" onClick={handleClearTable}>
-                  Limpar tabela
-                </Button>
-              )}
+        <TabsContent value="done" className="mt-4">
+          <TicketTable
+            data={doneTickets}
+            disableDrag
+            onDeleteTicket={handleDeleteTicket}
+            groupByClosedDate
+          />
+        </TabsContent>
+      </Tabs>
 
-              <Button onClick={handleAddTicket}>+ Novo ticket</Button>
-            </div>
-          )}
-        </div>
-      </div>
-      {/* Card Content */}
-      <div>
-        <Tabs value={activeTab} onValueChange={handleTabChange}>
-          <TabsList>
-            <TabsTrigger value="progress">
-              Em andamento ({inProgressTickets.length})
-            </TabsTrigger>
-            <TabsTrigger value="done">
-              Finalizados ({doneTickets.length})
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="progress" className="mt-4">
-            {inProgressTickets.length === 0 ? (
-              isSearching ? (
-                <EmptySearchState />
-              ) : (
-                <EmptyInProgressTicketsState />
-              )
-            ) : (
-              <TicketTable
-                data={inProgressTickets}
-                onChange={mergeTickets}
-                disableDrag={isSearching}
-                onReorder={handleReorderInProgress}
-                onDeleteTicket={handleDeleteTicket}
-              />
-            )}
-          </TabsContent>
-
-          <TabsContent value="done" className="mt-4">
-            {doneTickets.length === 0 ? (
-              isSearching ? (
-                <EmptySearchState />
-              ) : (
-                <EmptyDoneTicketsState />
-              )
-            ) : (
-              <TicketTable
-                data={doneTickets}
-                onChange={mergeTickets}
-                disableDrag
-                onDeleteTicket={handleDeleteTicket}
-                groupByClosedDate
-              />
-            )}
-          </TabsContent>
-        </Tabs>
-      </div>
+      <ReopenTicketsDialog
+        open={reopenDialogOpen}
+        tickets={reopenCandidates}
+        onConfirm={confirmReopen}
+        onClose={() => setReopenDialogOpen(false)}
+      />
     </section>
   );
 }
