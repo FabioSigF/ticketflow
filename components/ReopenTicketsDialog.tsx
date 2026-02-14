@@ -58,13 +58,14 @@ export function ReopenTicketsDialog({
 
         <div className="max-h-80 overflow-auto border rounded-md">
           {tickets.map((t) => (
-            <label key={t.id} className="flex gap-2 items-center p-2 border-b">
+            <label key={t.id} className="flex gap-4 items-center p-4 border-b">
               <Checkbox
                 checked={selected.has(t.id)}
                 onCheckedChange={(v) => toggle(t.id, Boolean(v))}
+                className="border border-border bg-gray-200"
               />
               <span>
-                #{t.ticketId} — {t.title}
+                Ticket#{t.ticketId} — {t.title}
               </span>
             </label>
           ))}
