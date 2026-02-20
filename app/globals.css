@@ -19,10 +19,20 @@ html {
 
 body {
   min-height: 100vh;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI',
-    Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, sans-serif;
-  background-color: #f8fafc;
-  color: #0f172a;
+  font-family:
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Oxygen,
+    Ubuntu,
+    Cantarell,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
   line-height: 1.5;
 }
 
@@ -52,10 +62,10 @@ select {
   cursor: pointer;
 }
 
-input[type='search']::-webkit-search-decoration,
-input[type='search']::-webkit-search-cancel-button,
-input[type='search']::-webkit-search-results-button,
-input[type='search']::-webkit-search-results-decoration {
+input[type="search"]::-webkit-search-decoration,
+input[type="search"]::-webkit-search-cancel-button,
+input[type="search"]::-webkit-search-results-button,
+input[type="search"]::-webkit-search-results-decoration {
   -webkit-appearance: none;
 }
 
@@ -89,7 +99,6 @@ td {
   -webkit-tap-highlight-color: transparent;
 }
 
-
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -104,3 +113,69 @@ td {
   background: #94a3b8;
 }
 
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --border: 214 32% 91%;
+  --input: 214 32% 91%;
+  --ring: 214 32% 91%;
+
+  --muted: 210 40% 96%;
+  --muted-foreground: 215 16% 47%;
+
+  --accent: 210 40% 96%;
+  --accent-foreground: 222 47% 11%;
+
+  --primary: 28 100% 57%;
+  --primary-foreground: 0 0% 100%;
+
+  --secondary: 214 32% 91%;
+  --secondary-foreground: 222 47% 11%;
+
+  --destructive: 0 72% 51%;
+  --destructive-foreground: 0 0% 100%;
+}
+
+.dark {
+  --background: 220 15% 14%;
+  --foreground: 220 20% 92%;
+
+  /* superfícies */
+  --card: 220 14% 18%;
+  --card-foreground: 220 20% 92%;
+
+  --popover: 220 14% 17%;
+  --popover-foreground: 220 20% 92%;
+
+  /* estrutura */
+  --border: 220 12% 28%;
+  --input: 220 12% 22%;
+  --ring: 215 80% 65%;
+
+  /* neutros */
+  --muted: 220 12% 20%;
+  --muted-foreground: 220 10% 68%;
+
+  /* interação */
+  --accent: 220 13% 24%;
+  --accent-foreground: 220 20% 94%;
+
+  /* primária (mantendo seu laranja, mas legível no dark) */
+  --primary: 28 95% 62%;
+  --primary-foreground: 25 30% 12%;
+
+  /* secundária */
+  --secondary: 220 13% 24%;
+  --secondary-foreground: 220 20% 94%;
+
+  /* destrutiva corrigida (antes parecia erro crítico sempre) */
+  --destructive: 0 70% 58%;
+  --destructive-foreground: 0 0% 98%;
+}

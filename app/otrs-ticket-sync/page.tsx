@@ -10,7 +10,7 @@ export default function OtrsTicketSyncPage() {
         <h1 className="text-3xl font-bold">Sincronização com OTRS</h1>
         <p className="text-muted-foreground">
           Siga o passo a passo abaixo para baixar a extensão, instalá-la no
-          Chrome e sincronizar seus tickets do OTRS com o Ticket Flow.
+          Chrome ou no Edge e sincronizar seus tickets do OTRS com o Ticket Flow.
         </p>
       </header>
 
@@ -32,7 +32,7 @@ export default function OtrsTicketSyncPage() {
       {/* Step 2 */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
-          2. Instalar a extensão no Chrome
+          2. Instalar a extensão no Chrome (ou Edge)
         </h2>
         <ol className="list-decimal pl-6 space-y-2">
           <li>
@@ -53,7 +53,7 @@ export default function OtrsTicketSyncPage() {
             alt="Instalar extensão no Chrome"
             width={400}
             height={450}
-            className="rounded-lg border"
+            className="rounded-lg border border-border"
           />
           <i className="text-gray-600">
             *Você pode abrir a página de extensões pelos{" "}
@@ -73,7 +73,7 @@ export default function OtrsTicketSyncPage() {
             alt="Instalar extensão no Chrome"
             width={1000}
             height={450}
-            className="rounded-lg border"
+            className="rounded-lg border border-border"
           />
         </div>
         <div className="mt-8 flex flex-col gap-4">
@@ -85,7 +85,7 @@ export default function OtrsTicketSyncPage() {
             alt="Instalar extensão no Chrome"
             width={1000}
             height={450}
-            className="rounded-lg border"
+            className="rounded-lg border border-border"
           />
         </div>
         <p>Pronto, agora a extensão está instalada no seu navegador!</p>
@@ -102,7 +102,7 @@ export default function OtrsTicketSyncPage() {
           alt="Página do OTRS"
           width={1000}
           height={450}
-          className="rounded-lg border"
+          className="rounded-lg border border-border"
         />
       </section>
 
@@ -125,14 +125,14 @@ export default function OtrsTicketSyncPage() {
           alt="Sincronizar com Ticket Flow"
           width={400}
           height={450}
-          className="rounded-lg border"
+          className="rounded-lg border border-border"
         />
         <Image
           src="/images/tutorial/step4.2.png"
           alt="Sincronizar com Ticket Flow"
           width={400}
           height={450}
-          className="rounded-lg border"
+          className="rounded-lg border border-border"
         />
       </section>
 
@@ -149,11 +149,11 @@ export default function OtrsTicketSyncPage() {
           alt="Tickets sincronizados no Ticket Flow"
           width={1000}
           height={450}
-          className="rounded-lg border"
+          className="rounded-lg border border-border"
         />
       </section>
 
-      <footer className="pt-8 border-t text-sm text-muted-foreground">
+      <footer className="pt-8 border border-border-t text-sm text-muted-foreground">
         Em caso de dúvidas, entre em contato com o administrador da ferramenta
         ou consulte a documentação técnica.
       </footer>

@@ -41,6 +41,7 @@ import { TicketColumns } from "./TicketColumns";
 import { reorder } from "@/utils/reorder";
 import { TicketRow } from "./TicketRow";
 import React, { useCallback, useState } from "react";
+import { formatClosedDate } from "@/utils/formatClosedDate";
 
 type TicketTableProps = {
   data: Ticket[];
@@ -48,6 +49,7 @@ type TicketTableProps = {
   onChange?: (updater: (prev: Ticket[]) => Ticket[]) => void;
   disableDrag?: boolean;
   onDeleteTicket?: (id: number) => void;
+  groupByClosedDate?: boolean;
 };
 
 type DraggableRowProps = {
@@ -103,13 +105,14 @@ export function TicketTable({
   disableDrag = false,
   onReorder,
   onDeleteTicket,
+  groupByClosedDate = false,
 }: TicketTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: { distance: 5 },
-    })
+    }),
   );
 
   const table = useReactTable<Ticket>({
@@ -131,23 +134,61 @@ export function TicketTable({
     const orderedIds = reorder(
       data.map((t) => t.id),
       data.findIndex((t) => t.id === active.id),
-      data.findIndex((t) => t.id === over.id)
+      data.findIndex((t) => t.id === over.id),
     );
 
     onReorder?.(orderedIds);
   }
 
   const handleUpdateTicket = useCallback(
-  (updated: Ticket) => {
-    onChange?.((prev) =>
-      prev.map((t) => (t.id === updated.id ? updated : t))
-    );
-  },
-  [onChange]
-);
+    (updated: Ticket) => {
+      onChange?.((prev) =>
+        prev.map((t) => (t.id === updated.id ? updated : t)),
+      );
+    },
+    [onChange],
+  );
+
+  const groupedRows = React.useMemo(() => {
+    const rows = table.getRowModel().rows;
+
+    if (!groupByClosedDate) {
+      return [{ label: null, rows }];
+    }
+
+    const hasActiveSorting = sorting.length > 0;
+
+    const rowsToGroup = hasActiveSorting
+      ? rows // 🔥 respeita sorting do TanStack
+      : [...rows].sort((a, b) => {
+          const aDate = a.original.closedAt;
+          const bDate = b.original.closedAt;
+
+          if (aDate && bDate) return bDate - aDate;
+          if (aDate) return -1;
+          if (bDate) return 1;
+          return 0;
+        });
+
+    const groups = new Map<string, Row<Ticket>[]>();
+
+    rowsToGroup.forEach((row) => {
+      const label = row.original.closedAt
+        ? formatClosedDate(row.original.closedAt)
+        : "Sem data";
+
+      if (!groups.has(label)) groups.set(label, []);
+      groups.get(label)!.push(row);
+    });
+
+    return Array.from(groups.entries()).map(([label, rows]) => ({
+      label,
+      rows,
+    }));
+  }, [data, groupByClosedDate, sorting]);
 
   return (
-    <div className="rounded-lg border bg-background shadow-sm">
+    <div className="rounded-lg border border-border bg-background shadow-sm">
       {/* Scroll container */}
       <div className="overflow-x-auto overscroll-x-contain">
         <DndContext
@@ -175,7 +216,7 @@ export function TicketTable({
                       >
                         {flexRender(
                           header.column.columnDef.header,
-                          header.getContext()
+                          header.getContext(),
                         )}
                       </TableHead>
                     ))}
@@ -184,15 +225,38 @@ export function TicketTable({
               </TableHeader>
 
               <TableBody>
-                {table.getRowModel().rows.map((row) => (
-                  <DraggableRow
-                    key={row.original.id}
-                    row={row}
-                    data={data}
-                    onUpdateTicket={handleUpdateTicket}
-                    disableDrag={disableDrag}
-                    onDeleteTicket={onDeleteTicket}
-                  />
+                {groupedRows.map((group) => (
+                  <React.Fragment key={group.label ?? "default"}>
+                    {group.label && (
+                      <TableRow>
+                        <td
+                          colSpan={TicketColumns.length}
+                          className="
+              bg-muted/50
+              text-xs
+              font-semibold
+              uppercase
+              text-muted-foreground
+              px-14
+              py-2
+            "
+                        >
+                          {group.label}
+                        </td>
+                      </TableRow>
+                    )}
+
+                    {group.rows.map((row) => (
+                      <DraggableRow
+                        key={row.original.id}
+                        row={row}
+                        data={data}
+                        onUpdateTicket={handleUpdateTicket}
+                        disableDrag={disableDrag}
+                        onDeleteTicket={onDeleteTicket}
+                      />
+                    ))}
+                  </React.Fragment>
                 ))}
               </TableBody>
             </Table>
