@@ -10,7 +10,7 @@ export default function OtrsTicketSyncPage() {
         <h1 className="text-3xl font-bold">Sincronização com OTRS</h1>
         <p className="text-muted-foreground">
           Siga o passo a passo abaixo para baixar a extensão, instalá-la no
-          Chrome e sincronizar seus tickets do OTRS com o Ticket Flow.
+          Chrome ou no Edge e sincronizar seus tickets do OTRS com o Ticket Flow.
         </p>
       </header>
 
@@ -32,7 +32,7 @@ export default function OtrsTicketSyncPage() {
       {/* Step 2 */}
       <section className="space-y-4">
         <h2 className="text-xl font-semibold">
-          2. Instalar a extensão no Chrome
+          2. Instalar a extensão no Chrome (ou Edge)
         </h2>
         <ol className="list-decimal pl-6 space-y-2">
           <li>

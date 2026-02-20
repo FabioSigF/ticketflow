@@ -54,15 +54,15 @@ export default function RootLayout({
                 >
                   Como sincronizar com OTRS?
                 </Link>
-                <Link href="/docs" className="hover:text-foreground transition">
+                <Link href="https://github.com/FabioSigF/ticketflow" target="_blank" className="hover:text-foreground transition">
                   Documentação
                 </Link>
-                <Link
+                {/* <Link
                   href="/updates"
                   className="hover:text-foreground transition"
                 >
                   Atualizações
-                </Link>
+                </Link> */}
                 <ThemeToggle />
               </nav>
             </div>
